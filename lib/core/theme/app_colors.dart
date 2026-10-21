@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// FacultyLink brand palette — shared with the web portal (`admin_reviewer_web/css/tokens.css`).
+/// FacultyLink brand palette — shared with `admin_reviewer_web/css/tokens.css`.
 abstract final class AppColors {
-  static const primaryNavy = Color(0xFF082653);
+  static const primaryNavy = Color(0xFF071B38);
+  static const deepBlue = Color(0xFF0B2E63);
   static const primaryBlue = Color(0xFF0866D9);
-  static const accentCyan = Color(0xFF09B8F2);
+  static const accentCyan = Color(0xFF08B8F2);
 
-  /// Legacy aliases used across existing widgets.
   static const academicBlue = primaryBlue;
   static const brightBlue = primaryBlue;
   static const deepNavy = primaryNavy;

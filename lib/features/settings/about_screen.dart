@@ -13,7 +13,7 @@ class AboutScreen extends StatelessWidget {
         padding: EdgeInsets.all(24),
         child: Column(
           children: [
-            FlLogo(size: 56),
+            FlLogo(size: 48, variant: FlLogoVariant.full),
             SizedBox(height: 16),
             Text(AppDisclaimers.systemName, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w600)),
             SizedBox(height: 8),

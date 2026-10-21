@@ -133,81 +133,11 @@
     kraAssessment: {
       facultyId: 'F-001',
       facultyName: 'Maria Clara Reyes',
-      kras: [
-        {
-          id: 'kra1',
-          title: 'KRA I — Instruction',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Criterion A — Teaching Effectiveness',
-              indicators: [
-                {
-                  code: 'A.1',
-                  title: 'Student Evaluation (SET)',
-                  evidence: ['Aggregated SET reports by academic year'],
-                  semesters: [
-                    { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                    { term: '2nd Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                  ],
-                  aggregatedScore: 'Not Yet Calculated',
-                  validation: 'Mock — display backend SET aggregation when integrated.',
-                },
-                {
-                  code: 'A.2',
-                  title: 'Supervisor Evaluation (SEF)',
-                  evidence: ['SEF summary sheets'],
-                  semesters: [
-                    { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                  ],
-                  aggregatedScore: 'Not Yet Calculated',
-                  validation: 'Mock — semesters shown for review; final indicator score from backend.',
-                },
-              ],
-            },
-            {
-              code: 'B',
-              title: 'Criterion B — Load-related indicators',
-              indicators: [
-                { code: 'B.1', title: 'Teaching load compliance (placeholder)', evidence: ['Load form'], aggregatedScore: '—' },
-              ],
-            },
-          ],
-        },
-        {
-          id: 'kra2',
-          title: 'KRA II — Research',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Criterion A — Research output (placeholder)',
-              indicators: [{ code: 'A.1', title: 'Publication indicator (config TBD)', evidence: ['PDF'], aggregatedScore: '—' }],
-            },
-          ],
-        },
-        {
-          id: 'kra3',
-          title: 'KRA III — Extension & Professional Service',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Criterion A — Extension (placeholder)',
-              indicators: [{ code: 'A.1', title: 'Extension project (config TBD)', evidence: ['MOA'], aggregatedScore: '—' }],
-            },
-          ],
-        },
-        {
-          id: 'kra4',
-          title: 'KRA IV — Professional Development',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Criterion A — Qualifications (placeholder)',
-              indicators: [{ code: 'A.1', title: 'Graduate degree (config TBD)', evidence: ['Diploma'], aggregatedScore: '—' }],
-            },
-          ],
-        },
-      ],
+      get kras() {
+        return global.FacultyLinkKraStructure
+          ? FacultyLinkKraStructure.buildReviewerKras()
+          : []
+      },
     },
     rankSimulation: [
       {

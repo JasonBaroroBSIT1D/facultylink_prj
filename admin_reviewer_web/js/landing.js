@@ -16,4 +16,33 @@ document.addEventListener('DOMContentLoaded', function () {
       menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
     })
   }
+
+  var sectionLinks = document.querySelectorAll('[data-nav-section]')
+  var sections = ['home', 'features', 'about']
+    .map(function (id) {
+      return document.getElementById(id)
+    })
+    .filter(Boolean)
+
+  function setActive(sectionId) {
+    sectionLinks.forEach(function (link) {
+      link.classList.toggle('is-active', link.getAttribute('data-nav-section') === sectionId)
+    })
+  }
+
+  if (sections.length && sectionLinks.length) {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            setActive(entry.target.id)
+          }
+        })
+      },
+      { rootMargin: '-40% 0px -50% 0px', threshold: 0.01 }
+    )
+    sections.forEach(function (section) {
+      observer.observe(section)
+    })
+  }
 })

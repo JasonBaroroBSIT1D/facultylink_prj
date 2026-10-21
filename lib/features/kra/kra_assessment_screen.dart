@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../core/kra/kra_structure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
-import '../../widgets/fl_mock_banner.dart';
 import 'kra_indicator_detail_screen.dart';
 
 class KraAssessmentScreen extends StatefulWidget {
@@ -32,66 +32,100 @@ class _KraAssessmentScreenState extends State<KraAssessmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('KRA Assessment'),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.deepNavy,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('KRA Assessment')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
-                const FlMockBanner(),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
                   child: Text(
-                    'KRA → Criterion → Indicator → documents → validation → eligible points',
+                    'KRA → Criterion → Indicator → documents',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                   ),
                 ),
-                ..._sections.map((section) => _KraSectionTile(section: section)),
+                ..._sections.map((section) => _KraSectionCard(section: section)),
               ],
             ),
     );
   }
 }
 
-class _KraSectionTile extends StatelessWidget {
-  const _KraSectionTile({required this.section});
+class _KraSectionCard extends StatelessWidget {
+  const _KraSectionCard({required this.section});
 
   final KraSectionMock section;
 
   @override
   Widget build(BuildContext context) {
+    final kraKey = KraStructure.kraOptions.firstWhere(
+      (k) => section.title.startsWith(k),
+      orElse: () => section.title,
+    );
+    final expected = KraStructure.lettersFor(kraKey);
+
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          title: Text(section.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          subtitle: Text(
+            '${section.criteria.length} of ${expected.length} criteria',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          children: section.criteria
+              .map((c) => _CriterionTile(kraTitle: section.title, criterion: c))
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _CriterionTile extends StatelessWidget {
+  const _CriterionTile({required this.kraTitle, required this.criterion});
+
+  final String kraTitle;
+  final KraCriterionMock criterion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.bgLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
       child: ExpansionTile(
-        title: Text(section.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        children: section.criteria
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        title: Text(
+          'Criterion ${criterion.code}',
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        subtitle: Text(criterion.title, style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        children: criterion.indicators
             .map(
-              (c) => ExpansionTile(
-                title: Text('Criterion ${c.code}: ${c.title}', style: const TextStyle(fontSize: 14)),
-                children: c.indicators
-                    .map(
-                      (ind) => ListTile(
-                        title: Text('${ind.code} — ${ind.title}'),
-                        subtitle: Text('Score: ${ind.aggregatedScore}'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => KraIndicatorDetailScreen(
-                              kraTitle: section.title,
-                              criterion: c,
-                              indicator: ind,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
+              (ind) => ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                title: Text('${ind.code} — ${ind.title}', style: const TextStyle(fontSize: 13)),
+                subtitle: Text('Score: ${ind.aggregatedScore}', style: const TextStyle(fontSize: 11)),
+                trailing: Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => KraIndicatorDetailScreen(
+                      kraTitle: kraTitle,
+                      criterion: criterion,
+                      indicator: ind,
+                    ),
+                  ),
+                ),
               ),
             )
             .toList(),

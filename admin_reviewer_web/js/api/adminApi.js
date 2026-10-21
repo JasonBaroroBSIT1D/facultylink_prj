@@ -25,7 +25,31 @@
     },
     /** GET /api/admin/kra-config */
     getKraConfig: function () {
-      return Promise.resolve(mock.kraConfig)
+      var kras =
+        global.FacultyLinkKraStructure && global.FacultyLinkKraStructure.buildAdminKras
+          ? global.FacultyLinkKraStructure.buildAdminKras()
+          : []
+      return Promise.resolve({ _mock: true, kras: kras })
+    },
+    /** GET /api/admin/evaluation-schedule */
+    listEvaluationSchedule: function () {
+      return Promise.resolve(
+        global.FacultyLinkEvaluationSchedule
+          ? global.FacultyLinkEvaluationSchedule.list()
+          : []
+      )
+    },
+    saveEvaluationSchedule: function (entry) {
+      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
+      return Promise.resolve(global.FacultyLinkEvaluationSchedule.add(entry))
+    },
+    updateEvaluationSchedule: function (id, patch) {
+      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
+      return Promise.resolve(global.FacultyLinkEvaluationSchedule.update(id, patch))
+    },
+    cancelEvaluationSchedule: function (id) {
+      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
+      return Promise.resolve(global.FacultyLinkEvaluationSchedule.cancel(id))
     },
     /** GET /api/admin/scoring-rules */
     getScoringRules: function () {

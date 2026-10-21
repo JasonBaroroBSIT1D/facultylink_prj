@@ -3,9 +3,8 @@ import '../../core/theme/app_colors.dart';
 import '../../models/document_status.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
-import '../../services/mock/faculty_mock_data.dart';
+import '../../core/kra/kra_structure.dart';
 import '../../widgets/fl_empty_state.dart';
-import '../../widgets/fl_mock_banner.dart';
 import '../../widgets/fl_status_badge.dart';
 import 'document_detail_screen.dart';
 import 'upload_document_screen.dart';
@@ -72,7 +71,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
       body: Column(
         children: [
-          const FlMockBanner(),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -97,20 +95,26 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         hint: const Text('KRA'),
                         items: [
                           const DropdownMenuItem(value: null, child: Text('All KRAs')),
-                          ...FacultyMockData.kraOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))),
+                          ...KraStructure.kraOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))),
                         ],
-                        onChanged: (v) => setState(() => _kraFilter = v),
+                        onChanged: (v) => setState(() {
+                          _kraFilter = v;
+                          if (!KraStructure.isValidPair(_kraFilter, _criterionFilter)) {
+                            _criterionFilter = null;
+                          }
+                        }),
                       ),
                       const SizedBox(width: 8),
                       DropdownButton<String?>(
                         value: _criterionFilter,
                         hint: const Text('Criterion'),
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('All criteria')),
-                          DropdownMenuItem(value: 'A', child: Text('A')),
-                          DropdownMenuItem(value: 'B', child: Text('B')),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('All criteria')),
+                          ...KraStructure.lettersFor(_kraFilter).map(
+                            (c) => DropdownMenuItem(value: c, child: Text('Criterion $c')),
+                          ),
                         ],
-                        onChanged: (v) => setState(() => _criterionFilter = v),
+                        onChanged: _kraFilter == null ? null : (v) => setState(() => _criterionFilter = v),
                       ),
                       const SizedBox(width: 8),
                       DropdownButton<String?>(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
-import '../../widgets/fl_mock_banner.dart';
 import '../../widgets/fl_summary_card.dart';
 import '../documents/upload_document_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -62,7 +61,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
             ? const Center(child: CircularProgressIndicator())
             : CustomScrollView(
                 slivers: [
-                  const SliverToBoxAdapter(child: FlMockBanner()),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),

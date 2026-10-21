@@ -1,3 +1,4 @@
+import '../../core/kra/kra_structure.dart';
 import '../../models/document_status.dart';
 import '../../models/faculty_models.dart';
 
@@ -23,46 +24,17 @@ abstract final class FacultyMockData {
     kraProgressPercent: 58,
   );
 
-  static const kraOverview = [
-    KraOverviewItem(
-      id: 'kra1',
-      title: 'KRA I — Instruction',
-      status: 'In progress',
-      progress: 0.65,
-    ),
-    KraOverviewItem(
-      id: 'kra2',
-      title: 'KRA II — Research and Innovation',
-      status: 'Documents pending',
-      progress: 0.42,
-    ),
-    KraOverviewItem(
-      id: 'kra3',
-      title: 'KRA III — Extension or Community Services',
-      status: 'Not started',
-      progress: 0.15,
-    ),
-    KraOverviewItem(
-      id: 'kra4',
-      title: 'KRA IV — Professional Development',
-      status: 'In progress',
-      progress: 0.55,
-    ),
+  static final kraOverview = [
+    KraOverviewItem(id: 'kra1', title: KraStructure.kraTitles[KraStructure.kraI]!, status: 'In progress', progress: 0.65),
+    KraOverviewItem(id: 'kra2', title: KraStructure.kraTitles[KraStructure.kraII]!, status: 'Documents pending', progress: 0.42),
+    KraOverviewItem(id: 'kra3', title: KraStructure.kraTitles[KraStructure.kraIII]!, status: 'Not started', progress: 0.15),
+    KraOverviewItem(id: 'kra4', title: KraStructure.kraTitles[KraStructure.kraIV]!, status: 'In progress', progress: 0.55),
   ];
 
   static const recentActivity = [
-    ActivityItem(
-      time: 'Today',
-      message: 'Publication PDF — System Approved (mock rule engine).',
-    ),
-    ActivityItem(
-      time: 'Yesterday',
-      message: 'Syllabus upload — Needs Verification (mock).',
-    ),
-    ActivityItem(
-      time: 'Oct 18',
-      message: 'Reviewer comment on extension MOA (mock).',
-    ),
+    ActivityItem(time: 'Today', message: 'Publication PDF — System Approved (mock rule engine).'),
+    ActivityItem(time: 'Yesterday', message: 'Syllabus upload — Needs Verification (mock).'),
+    ActivityItem(time: 'Oct 18', message: 'Reviewer comment on extension MOA (mock).'),
   ];
 
   static final documents = [
@@ -71,7 +43,7 @@ abstract final class FacultyMockData {
       title: 'Journal Article — Adaptive Learning',
       fileName: 'journal_article.pdf',
       uploadedAt: DateTime(2026, 10, 18),
-      kra: 'KRA II',
+      kra: KraStructure.kraII,
       criterion: 'A',
       detectedIndicator: 'A.1 Publication (classified mock)',
       status: DocumentStatus.systemApproved,
@@ -82,7 +54,7 @@ abstract final class FacultyMockData {
       title: 'Course Syllabus EDUC 210',
       fileName: 'syllabus_educ210.pdf',
       uploadedAt: DateTime(2026, 10, 17),
-      kra: 'KRA I',
+      kra: KraStructure.kraI,
       criterion: 'B',
       detectedIndicator: 'B.1 Load (mock)',
       status: DocumentStatus.needsVerification,
@@ -94,7 +66,7 @@ abstract final class FacultyMockData {
       title: 'SET Summary AY 2024–2025',
       fileName: 'set_summary.pdf',
       uploadedAt: DateTime(2026, 10, 10),
-      kra: 'KRA I',
+      kra: KraStructure.kraI,
       criterion: 'A',
       detectedIndicator: 'A.1 Student Evaluation (SET)',
       status: DocumentStatus.validating,
@@ -115,8 +87,7 @@ abstract final class FacultyMockData {
       status: base.status,
       ocrStatus: base.ocrStatus,
       reviewerNote: base.reviewerNote,
-      extractedText:
-          'Mock OCR excerpt for ${base.fileName}. Full text from Tesseract via Flask backend.',
+      extractedText: 'Mock OCR excerpt for ${base.fileName}. Full text from Tesseract via Flask backend.',
       ocrFields: const [
         MapEntry('Title', 'Sample extracted title'),
         MapEntry('Date', '2025-08-01'),
@@ -195,88 +166,108 @@ abstract final class FacultyMockData {
     readinessStatus: 'Awaiting backend evaluation',
   );
 
-  static const kraSections = [
-    KraSectionMock(
-      id: 'kra1',
-      title: 'KRA I — Instruction',
-      criteria: [
-        KraCriterionMock(
-          code: 'A',
-          title: 'Criterion A — Teaching Effectiveness',
-          indicators: [
-            KraIndicatorMock(
-              code: 'A.1',
-              title: 'Student Evaluation (SET)',
-              evidence: ['SET reports', 'Consolidated SET PDFs'],
-              semesters: [
-                '1st Sem AY 2024–2025 — rating: backend aggregation pending',
-                '2nd Sem AY 2024–2025 — rating: backend aggregation pending',
-              ],
-            ),
-            KraIndicatorMock(
-              code: 'A.2',
-              title: 'Supervisor Evaluation (SEF)',
-              evidence: ['SEF summary sheets'],
-              semesters: ['1st Sem AY 2024–2025 — backend aggregation pending'],
-            ),
-          ],
-        ),
-        KraCriterionMock(
-          code: 'B',
-          title: 'Criterion B — Load-related (placeholder)',
-          indicators: [
-            KraIndicatorMock(code: 'B.1', title: 'Teaching load (config TBD)', evidence: ['Load form']),
-          ],
-        ),
-      ],
-    ),
-    KraSectionMock(
-      id: 'kra2',
-      title: 'KRA II — Research and Innovation',
-      criteria: [
-        KraCriterionMock(
-          code: 'A',
-          title: 'Criterion A — Research output (placeholder)',
-          indicators: [
-            KraIndicatorMock(code: 'A.1', title: 'Publication (config TBD)', evidence: ['PDF']),
-          ],
-        ),
-      ],
-    ),
-    KraSectionMock(
-      id: 'kra3',
-      title: 'KRA III — Extension or Community Services',
-      criteria: [
-        KraCriterionMock(
-          code: 'A',
-          title: 'Criterion A — Extension (placeholder)',
-          indicators: [
-            KraIndicatorMock(code: 'A.1', title: 'Extension project (config TBD)', evidence: ['MOA']),
-          ],
-        ),
-      ],
-    ),
-    KraSectionMock(
-      id: 'kra4',
-      title: 'KRA IV — Professional Development',
-      criteria: [
-        KraCriterionMock(
-          code: 'A',
-          title: 'Criterion A — Qualifications (placeholder)',
-          indicators: [
-            KraIndicatorMock(code: 'A.1', title: 'Graduate degree (config TBD)', evidence: ['Diploma']),
-          ],
-        ),
-      ],
-    ),
-  ];
+  static KraIndicatorMock _placeholderIndicator(String code) => KraIndicatorMock(
+        code: code,
+        title: 'Indicator $code (config TBD)',
+        evidence: const ['Supporting document'],
+        aggregatedScore: 'Not Yet Calculated',
+      );
 
-  static const kraOptions = ['KRA I', 'KRA II', 'KRA III', 'KRA IV'];
+  static KraCriterionMock _placeholderCriterion(String letter) => KraCriterionMock(
+        code: letter,
+        title: 'Criterion $letter',
+        indicators: [_placeholderIndicator('$letter.1')],
+      );
 
-  static Map<String, List<String>> criterionOptions = {
-    'KRA I': ['A — Teaching Effectiveness', 'B — Load-related'],
-    'KRA II': ['A — Research output'],
-    'KRA III': ['A — Extension'],
-    'KRA IV': ['A — Qualifications'],
-  };
+  static List<KraSectionMock> get kraSections {
+    KraCriterionMock kra1A = KraCriterionMock(
+      code: 'A',
+      title: 'Criterion A — Teaching Effectiveness',
+      indicators: const [
+        KraIndicatorMock(
+          code: 'A.1',
+          title: 'Student Evaluation (SET)',
+          evidence: ['SET reports', 'Consolidated SET PDFs'],
+          semesters: [
+            '1st Sem AY 2024–2025 — rating: backend aggregation pending',
+            '2nd Sem AY 2024–2025 — rating: backend aggregation pending',
+          ],
+        ),
+        KraIndicatorMock(
+          code: 'A.2',
+          title: 'Supervisor Evaluation (SEF)',
+          evidence: ['SEF summary sheets'],
+          semesters: ['1st Sem AY 2024–2025 — backend aggregation pending'],
+        ),
+      ],
+    );
+    KraCriterionMock kra1B = KraCriterionMock(
+      code: 'B',
+      title: 'Criterion B — Load-related (placeholder)',
+      indicators: [
+        KraIndicatorMock(code: 'B.1', title: 'Teaching load (config TBD)', evidence: ['Load form']),
+      ],
+    );
+
+    KraCriterionMock kra2A = KraCriterionMock(
+      code: 'A',
+      title: 'Criterion A — Research output (placeholder)',
+      indicators: [
+        KraIndicatorMock(code: 'A.1', title: 'Publication (config TBD)', evidence: ['PDF']),
+      ],
+    );
+
+    KraCriterionMock kra3A = KraCriterionMock(
+      code: 'A',
+      title: 'Criterion A — Extension (placeholder)',
+      indicators: [
+        KraIndicatorMock(code: 'A.1', title: 'Extension project (config TBD)', evidence: ['MOA']),
+      ],
+    );
+
+    KraCriterionMock kra4A = KraCriterionMock(
+      code: 'A',
+      title: 'Criterion A — Qualifications (placeholder)',
+      indicators: [
+        KraIndicatorMock(code: 'A.1', title: 'Graduate degree (config TBD)', evidence: ['Diploma']),
+      ],
+    );
+
+    List<KraCriterionMock> criteriaFor(String kra, Map<String, KraCriterionMock> seeded) {
+      return KraStructure.lettersFor(kra).map((letter) {
+        return seeded[letter] ?? _placeholderCriterion(letter);
+      }).toList();
+    }
+
+    return [
+      KraSectionMock(
+        id: 'kra1',
+        title: KraStructure.kraTitles[KraStructure.kraI]!,
+        criteria: criteriaFor(KraStructure.kraI, {'A': kra1A, 'B': kra1B}),
+      ),
+      KraSectionMock(
+        id: 'kra2',
+        title: KraStructure.kraTitles[KraStructure.kraII]!,
+        criteria: criteriaFor(KraStructure.kraII, {'A': kra2A}),
+      ),
+      KraSectionMock(
+        id: 'kra3',
+        title: KraStructure.kraTitles[KraStructure.kraIII]!,
+        criteria: criteriaFor(KraStructure.kraIII, {'A': kra3A}),
+      ),
+      KraSectionMock(
+        id: 'kra4',
+        title: KraStructure.kraTitles[KraStructure.kraIV]!,
+        criteria: criteriaFor(KraStructure.kraIV, {'A': kra4A}),
+      ),
+    ];
+  }
+
+  static Map<String, List<String>> get criterionOptions {
+    final map = <String, List<String>>{};
+    for (final kra in KraStructure.kraOptions) {
+      map[kra] = KraStructure.lettersFor(kra);
+    }
+    return map;
+  }
 }

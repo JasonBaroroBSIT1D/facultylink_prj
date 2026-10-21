@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/document_status.dart';
+import '../../core/kra/kra_structure.dart';
 import '../../services/mock/faculty_mock_data.dart';
 import '../../widgets/fl_primary_button.dart';
 
@@ -144,7 +145,7 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
               DropdownButtonFormField<String>(
                 initialValue: _kra,
                 decoration: const InputDecoration(labelText: 'KRA'),
-                items: FacultyMockData.kraOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
+                items: KraStructure.kraOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
                 onChanged: (v) => setState(() {
                   _kra = v;
                   _criterion = null;

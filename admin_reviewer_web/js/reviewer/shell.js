@@ -44,10 +44,9 @@
 
   document.body.classList.add('admin-portal')
   document.body.innerHTML =
-    '<div class="admin-mock-banner">Reviewer mock mode — decisions and scores are not persisted. Valid documents may show System Approved without mandatory reviewer approval.</div>' +
     '<div class="admin-layout">' +
     '<aside class="admin-sidebar" id="admin-sidebar">' +
-    '<div class="admin-sidebar__brand"><div data-fl-logo data-size="sm" data-variant="light" data-show-text="false" data-emblem-only="true"></div>' +
+    '<div class="admin-sidebar__brand"><div data-fl-logo data-logo-mode="nav" data-variant="light" data-size="sm"></div>' +
     '<p style="margin:8px 0 0;font-size:0.75rem;opacity:0.75">Reviewer Portal</p></div>' +
     '<nav class="admin-sidebar__nav" aria-label="Reviewer">' +
     buildNav() +
@@ -57,7 +56,7 @@
     '<header class="admin-header">' +
     '<button type="button" class="admin-header__menu" id="admin-menu-btn" aria-label="Toggle menu">' +
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
-    '<div class="admin-header__search"><input type="search" placeholder="Search documents, faculty… (mock)" aria-label="Search" /></div>' +
+    '<div class="admin-header__search"><input type="search" placeholder="Search documents, faculty…" aria-label="Search" /></div>' +
     '<div class="admin-header__actions">' +
     '<a href="notifications.html" class="admin-icon-btn" aria-label="Notifications"><span class="admin-icon-btn__dot"></span>' +
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 11-6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>' +

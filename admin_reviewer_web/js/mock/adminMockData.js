@@ -32,68 +32,11 @@
     ],
     kraConfig: {
       _mock: true,
-      kras: [
-        {
-          id: 'kra1',
-          title: 'KRA I — Instruction',
-          weightNote: 'Weighting configured per institutional guideline (mock).',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Teaching Load & Quality',
-              indicators: ['Teaching load compliance', 'Student evaluation summary'],
-              evidence: ['Official load form', 'SET aggregated report'],
-              capNote: 'Point cap from backend configuration (not shown — mock UI).',
-            },
-            {
-              code: 'B',
-              title: 'Course Development',
-              indicators: ['Syllabus alignment', 'Learning materials'],
-              evidence: ['Syllabus PDF', 'Module samples'],
-              capNote: 'Scoring rules loaded from Flask API when available.',
-            },
-          ],
-        },
-        {
-          id: 'kra2',
-          title: 'KRA II — Research',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Research Output',
-              indicators: ['Peer-reviewed publication', 'Citation index entry'],
-              evidence: ['Publication PDF', 'Indexing proof'],
-              capNote: 'Mock placeholder — no official CHED points displayed.',
-            },
-          ],
-        },
-        {
-          id: 'kra3',
-          title: 'KRA III — Extension & Professional Service',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Community Extension',
-              indicators: ['Extension project leadership', 'Beneficiary documentation'],
-              evidence: ['MOA', 'Completion report'],
-              capNote: 'Mock configuration shell only.',
-            },
-          ],
-        },
-        {
-          id: 'kra4',
-          title: 'KRA IV — Professional Development & Qualifications',
-          criteria: [
-            {
-              code: 'A',
-              title: 'Advanced Studies & Certifications',
-              indicators: ['Graduate degree', 'Professional license'],
-              evidence: ['Diploma', 'PRC ID scan'],
-              capNote: 'Evidence requirements editable when backend is connected.',
-            },
-          ],
-        },
-      ],
+      get kras() {
+        return global.FacultyLinkKraStructure
+          ? FacultyLinkKraStructure.buildAdminKras()
+          : []
+      },
     },
     scoringRules: {
       _mock: true,

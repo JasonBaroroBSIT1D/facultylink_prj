@@ -1,6 +1,12 @@
 (function (global) {
   global.FacultyLinkReviewerNav = [
-    { section: 'Review', items: [{ id: 'dashboard', label: 'Dashboard', href: 'dashboard.html' }] },
+    {
+      section: 'Review',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', href: 'dashboard.html' },
+        { id: 'evaluation-schedule', label: 'Evaluation Schedule', href: 'evaluation-schedule.html' },
+      ],
+    },
     {
       section: 'Faculty',
       items: [

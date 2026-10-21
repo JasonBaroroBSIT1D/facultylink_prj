@@ -1,23 +1,24 @@
 :root {
-  --fl-primary-navy: #082653;
+  --fl-primary-navy: #071b38;
+  --fl-deep-blue: #0b2e63;
   --fl-primary-blue: #0866d9;
-  --fl-accent-cyan: #09b8f2;
+  --fl-accent-cyan: #08b8f2;
   --fl-academic-blue: #0866d9;
   --fl-bright-blue: #0866d9;
-  --fl-deep-navy: #082653;
-  --fl-cyan: #09b8f2;
+  --fl-deep-navy: #071b38;
+  --fl-cyan: #08b8f2;
   --fl-white: #ffffff;
   --fl-bg-light: #f5f8fc;
   --fl-text-primary: #10233f;
   --fl-text-muted: #64748b;
   --fl-border: #dce5f0;
-  --fl-shadow-sm: 0 4px 14px rgba(8, 38, 83, 0.08);
-  --fl-shadow-md: 0 12px 40px rgba(8, 38, 83, 0.12);
+  --fl-shadow-sm: 0 2px 12px rgba(7, 27, 56, 0.06);
+  --fl-shadow-md: 0 16px 48px rgba(7, 27, 56, 0.1);
   --fl-radius-sm: 8px;
-  --fl-radius-md: 14px;
-  --fl-radius-lg: 22px;
-  --fl-radius-xl: 28px;
+  --fl-radius-md: 12px;
+  --fl-radius-lg: 16px;
+  --fl-radius-xl: 20px;
   --fl-font: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --fl-transition: 0.22s ease;
-  --fl-logo-path: url('../assets/images/facultylink-logo.jpg');
+  --fl-transition: 0.2s ease;
+  --fl-nav-height: 78px;
 }

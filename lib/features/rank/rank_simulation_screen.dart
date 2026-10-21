@@ -3,7 +3,6 @@ import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
 import '../../core/constants/app_disclaimers.dart';
-import '../../widgets/fl_mock_banner.dart';
 
 class RankSimulationScreen extends StatefulWidget {
   const RankSimulationScreen({super.key});
@@ -43,7 +42,16 @@ class _RankSimulationScreenState extends State<RankSimulationScreen> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const FlMockBanner(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Sample Data',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(

@@ -3,11 +3,10 @@ import 'app_colors.dart';
 
 abstract final class AppTheme {
   static ThemeData get light {
-    const seed = AppColors.brightBlue;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      primary: AppColors.academicBlue,
-      secondary: AppColors.cyan,
+      seedColor: AppColors.primaryBlue,
+      primary: AppColors.primaryBlue,
+      secondary: AppColors.accentCyan,
       surface: AppColors.white,
       onPrimary: AppColors.white,
     );
@@ -17,39 +16,59 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgLight,
       fontFamily: 'Segoe UI',
+      textTheme: const TextTheme(
+        headlineMedium: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800),
+        titleLarge: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+        bodyMedium: TextStyle(color: AppColors.textPrimary, height: 1.5),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.primaryNavy,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border, width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.brightBlue, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
         ),
         labelStyle: const TextStyle(
-          color: AppColors.deepNavy,
+          color: AppColors.primaryNavy,
           fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.academicBlue,
+          backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 2,
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
         ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: AppColors.primaryBlue),
       ),
     );
   }

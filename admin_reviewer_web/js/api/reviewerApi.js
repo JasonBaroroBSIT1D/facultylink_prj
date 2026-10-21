@@ -41,9 +41,24 @@
       return Promise.resolve(doc || null)
     },
     getKraAssessment: function (facultyId) {
-      var data = Object.assign({}, mock.kraAssessment)
-      if (facultyId) data.facultyId = facultyId
-      return Promise.resolve(data)
+      var kras =
+        global.FacultyLinkKraStructure && global.FacultyLinkKraStructure.buildReviewerKras
+          ? global.FacultyLinkKraStructure.buildReviewerKras()
+          : []
+      return Promise.resolve({
+        facultyId: facultyId || mock.kraAssessment.facultyId,
+        facultyName: mock.kraAssessment.facultyName,
+        kras: kras,
+      })
+    },
+    listEvaluationSchedule: function () {
+      var session = global.FacultyLinkMockAuth && global.FacultyLinkMockAuth.loadSession()
+      var reviewerId = session && session.reviewerId ? session.reviewerId : 'R-01'
+      return Promise.resolve(
+        global.FacultyLinkEvaluationSchedule
+          ? global.FacultyLinkEvaluationSchedule.listForReviewer(reviewerId)
+          : []
+      )
     },
     listRankSimulations: function () {
       return Promise.resolve(mock.rankSimulation)

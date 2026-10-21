@@ -11,6 +11,7 @@
     {
       section: 'Configuration',
       items: [
+        { id: 'evaluation-schedule', label: 'Evaluation Schedule', href: 'evaluation-schedule.html' },
         { id: 'kra-config', label: 'KRA Configuration', href: 'kra-config.html' },
         { id: 'scoring-config', label: 'Validation & Scoring', href: 'scoring-config.html' },
       ],

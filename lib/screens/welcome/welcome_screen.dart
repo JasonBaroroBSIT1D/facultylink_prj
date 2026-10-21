@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_disclaimers.dart';
 import '../../core/theme/app_colors.dart';
-import '../../widgets/fl_gradient_background.dart';
+import '../../widgets/fl_assessment_flow_visual.dart';
 import '../../widgets/fl_logo.dart';
 import '../../widgets/fl_primary_button.dart';
-import '../../widgets/welcome_illustration.dart';
 import '../auth/login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -14,84 +13,64 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final headline = Theme.of(context).textTheme.headlineMedium?.copyWith(
+          color: AppColors.white,
+          fontWeight: FontWeight.w800,
+          height: 1.15,
+          letterSpacing: -0.02,
+        );
+
     return Scaffold(
-      body: FlGradientBackground(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      const FlLogo(size: 52),
-                      const SizedBox(height: 24),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primaryNavy.withValues(alpha: 0.18),
-                              blurRadius: 32,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            const FlLogo(size: 56, showLabel: false),
-                            const SizedBox(height: 12),
-                            Text(
-                              AppDisclaimers.systemName,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: AppColors.primaryNavy,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            const SizedBox(height: 20),
-                            const WelcomeIllustration(),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Organize evidence. Review KRA assessment progress.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    color: AppColors.primaryNavy,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.2,
-                                  ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'An academic self-assessment platform that helps faculty members organize supporting documents, '
-                              'review their KRA performance, and explore simulated academic rank outcomes.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textMuted,
-                                    height: 1.5,
-                                  ),
-                            ),
-                            const SizedBox(height: 28),
-                            FlPrimaryButton(
-                              label: 'Get Started',
-                              onPressed: () {
-                                Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+      backgroundColor: AppColors.primaryNavy,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              const FlLogo(size: 36, light: true),
+              const Spacer(flex: 2),
+              Text('Your Academic Growth,\nClearly Assessed.', style: headline),
+              const SizedBox(height: 14),
+              Text(
+                AppDisclaimers.purpose,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      height: 1.55,
+                    ),
+              ),
+              const SizedBox(height: 28),
+              const FlAssessmentFlowVisual(),
+              const Spacer(flex: 3),
+              FlPrimaryButton(
+                label: 'Get Started',
+                onPressed: () {
+                  Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+                },
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed(LoginScreen.routeName),
+                child: Text(
+                  'Sign In',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                AppDisclaimers.shortDisclaimer,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      height: 1.4,
+                    ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
