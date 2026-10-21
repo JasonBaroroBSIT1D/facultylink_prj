@@ -1,0 +1,64 @@
+/**
+ * Admin API layer — future Flask REST integration.
+ * All methods return Promises; swap implementations when backend is ready.
+ */
+(function (global) {
+  function notConnected() {
+    return Promise.reject(new Error('Backend not connected — using mock data only.'))
+  }
+
+  /** @type {import('../mock/adminMockData.js')} */
+  var mock = global.FacultyLinkAdminMock
+
+  var AdminApi = {
+    /** Replace with: GET /api/admin/dashboard */
+    getDashboardSummary: function () {
+      return Promise.resolve(mock.dashboardSummary)
+    },
+    /** GET /api/admin/faculty */
+    listFaculty: function () {
+      return Promise.resolve(mock.faculty)
+    },
+    /** GET /api/admin/reviewers */
+    listReviewers: function () {
+      return Promise.resolve(mock.reviewers)
+    },
+    /** GET /api/admin/kra-config */
+    getKraConfig: function () {
+      return Promise.resolve(mock.kraConfig)
+    },
+    /** GET /api/admin/scoring-rules */
+    getScoringRules: function () {
+      return Promise.resolve(mock.scoringRules)
+    },
+    /** GET /api/admin/documents */
+    listDocumentMonitoring: function () {
+      return Promise.resolve(mock.documentMonitoring)
+    },
+    /** GET /api/admin/rank-simulation */
+    listRankSimulationMonitoring: function () {
+      return Promise.resolve(mock.rankSimulation)
+    },
+    /** GET /api/admin/reports */
+    getReports: function () {
+      return Promise.resolve(mock.reports)
+    },
+    /** GET /api/admin/notifications */
+    listNotifications: function () {
+      return Promise.resolve(mock.notifications)
+    },
+    /** GET /api/admin/settings */
+    getSettings: function () {
+      return Promise.resolve(mock.settings)
+    },
+    /** Placeholder for future mutations */
+    saveKraConfig: function () {
+      return notConnected()
+    },
+    saveScoringRule: function () {
+      return notConnected()
+    },
+  }
+
+  global.FacultyLinkAdminApi = AdminApi
+})(window)

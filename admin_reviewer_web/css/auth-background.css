@@ -1,0 +1,57 @@
+/* Shared full-viewport CHED building background for auth pages */
+html.auth-html,
+body.auth-html {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+.auth-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+  overflow-x: hidden;
+}
+
+.auth-page__backdrop,
+.auth-page__overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.auth-page__backdrop {
+  z-index: -2;
+  background-image: url('../assets/images/ched-building.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.auth-page__overlay {
+  z-index: -1;
+  background: linear-gradient(
+    115deg,
+    rgba(8, 38, 83, 0.88) 0%,
+    rgba(8, 38, 83, 0.78) 42%,
+    rgba(8, 102, 217, 0.62) 100%
+  );
+}
+
+@media (max-width: 960px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-page__backdrop {
+    background-position: 65% center;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-page__backdrop {
+    background-position: 72% center;
+  }
+}

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" class="auth-html">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/login.css" />
+    <title>Sign In — FacultyLink</title>
+  </head>
+  <body class="auth-html">
+    <div class="auth-page">
+      <div class="auth-page__backdrop" aria-hidden="true"></div>
+      <div class="auth-page__overlay" aria-hidden="true"></div>
+
+      <aside class="auth-brand">
+        <div class="auth-brand__top">
+          <a href="index.html" class="fl-btn fl-btn--outline-light">← Back to Home</a>
+        </div>
+        <div class="auth-brand__inner">
+          <span class="auth-brand__badge">DBM–CHED aligned faculty self-assessment</span>
+          <h1>Welcome to FacultyLink</h1>
+          <p class="auth-brand__desc">
+            A document-validated platform for automated KRA scoring, compliance validation, and
+            rank simulation—built for higher education institutions. Admin and reviewer access for
+            monitoring, configuration, and verification workflows.
+          </p>
+          <div class="auth-feature-grid">
+            <article class="auth-feature-card">
+              <div class="auth-feature-card__icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </div>
+              <strong>Document Validation</strong>
+              <span>Rule-based checks on uploaded evidence</span>
+            </article>
+            <article class="auth-feature-card">
+              <div class="auth-feature-card__icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 19V5M4 19h16M8 15V9M12 15V7M16 15v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </div>
+              <strong>KRA Scoring</strong>
+              <span>Transparent progress across KRAs and criteria</span>
+            </article>
+            <article class="auth-feature-card">
+              <div class="auth-feature-card__icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </div>
+              <strong>Review &amp; Compliance</strong>
+              <span>Reviewer verification when authorized</span>
+            </article>
+          </div>
+          <a href="index.html#about" class="fl-btn fl-btn--outline-light" style="width: fit-content">About FacultyLink</a>
+          <p class="auth-brand__footer">© <span id="fl-copyright-year"></span> FacultyLink. All rights reserved.</p>
+        </div>
+      </aside>
+
+      <main class="auth-form-panel">
+        <div class="login-card">
+          <div class="login-card__logo">
+            <div data-fl-logo data-size="md" data-variant="dark" data-show-text="false"></div>
+          </div>
+          <h2>Welcome Back</h2>
+          <p class="login-card__sub">Sign in to access your academic portal</p>
+
+          <form id="login-form" class="login-form">
+            <div class="fl-field">
+              <label class="fl-field__label" for="email">Email Address</label>
+              <div class="fl-field__control">
+                <input
+                  class="fl-field__input"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="admin@university.edu.ph"
+                  required
+                />
+              </div>
+            </div>
+            <div class="fl-field">
+              <label class="fl-field__label" for="password">Password</label>
+              <div class="fl-field__control">
+                <input
+                  class="fl-field__input fl-field__input--password"
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="fl-field__toggle"
+                  id="password-toggle"
+                  aria-label="Show password"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="login-form__row">
+              <label class="login-checkbox">
+                <input type="checkbox" name="remember" />
+                Remember Me
+              </label>
+              <a class="login-link" href="forgot-password.html">Forgot Password?</a>
+            </div>
+
+            <p id="login-error" class="login-form__error" role="alert" hidden></p>
+
+            <button type="submit" id="login-submit" class="fl-btn fl-btn--primary fl-btn--full">
+              Sign In
+            </button>
+          </form>
+
+          <p class="login-card__footer">
+            New to FacultyLink? <strong>Contact Institution Admin</strong>
+          </p>
+
+          <div class="login-demo">
+            <p><strong>UI testing (mock auth):</strong></p>
+            <p>Admin — admin@facultylink.edu / demo-admin</p>
+            <p>Reviewer — reviewer@facultylink.edu / demo-reviewer</p>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="js/mockAuth.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+</html>
