@@ -1,3 +1,7 @@
+# Local secrets (Phase 4 database / Flask)
+.env
+backend/.env
+
 # Miscellaneous
 *.class
 *.log

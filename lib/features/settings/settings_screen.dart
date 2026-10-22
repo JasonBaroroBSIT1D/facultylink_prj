@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../screens/welcome/welcome_screen.dart';
-import '../../services/api/faculty_api.dart';
+import '../../services/auth/auth_api.dart';
 import '../../widgets/fl_primary_button.dart';
 import '../../widgets/fl_text_field.dart';
 import 'about_screen.dart';
@@ -14,7 +14,7 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Account Settings')),
       body: ListView(
         children: [
-          const ListTile(title: Text('Account Information'), subtitle: Text('Managed via Flask when integrated')),
+          const ListTile(title: Text('Account Information'), subtitle: Text('Signed in via FacultyLink API')),
           ListTile(
             title: const Text('Change Password'),
             trailing: const Icon(Icons.chevron_right),
@@ -40,7 +40,9 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
+            onTap: () async {
+              await AuthApi.logout();
+              if (!context.mounted) return;
               Navigator.of(context).pushNamedAndRemoveUntil(WelcomeScreen.routeName, (_) => false);
             },
           ),
@@ -66,15 +68,19 @@ class SettingsScreen extends StatelessWidget {
               FlTextField(label: 'New password', controller: next, obscureText: true),
               const SizedBox(height: 16),
               FlPrimaryButton(
-                label: 'Save (mock)',
+                label: 'Save',
                 onPressed: () async {
                   try {
-                    await FacultyApi.changePassword();
-                  } catch (_) {
+                    await AuthApi.changePassword(current.text, next.text);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Password change not saved — Flask API not connected.')),
+                        const SnackBar(content: Text('Password updated. Please sign in again.')),
                       );
+                      Navigator.of(context).pushNamedAndRemoveUntil(WelcomeScreen.routeName, (_) => false);
+                    }
+                  } on AuthException catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
                     }
                   }
                   if (ctx.mounted) Navigator.pop(ctx);

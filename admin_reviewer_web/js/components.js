@@ -96,9 +96,79 @@
     })
   }
 
+  // Both portal shells use the same breakpoint and drawer behavior.
+  function initPortalNavigation() {
+    var sidebar = document.getElementById('admin-sidebar')
+    var menu = document.getElementById('admin-menu-btn')
+    var close = document.getElementById('admin-menu-close')
+    var overlay = document.getElementById('admin-overlay')
+    var main = document.querySelector('.admin-main')
+    var compact = global.matchMedia('(max-width: 1024px)')
+    var opened = false
+
+    function setOpen(next, restoreFocus) {
+      var wasOpen = opened
+      opened = compact.matches && next
+      sidebar.classList.toggle('is-open', opened)
+      overlay.classList.toggle('is-visible', opened)
+      document.body.classList.toggle('admin-drawer-open', opened)
+      menu.setAttribute('aria-expanded', String(opened))
+      main.inert = opened
+      sidebar.inert = compact.matches && !opened
+      if (compact.matches) {
+        sidebar.setAttribute('role', 'dialog')
+        sidebar.setAttribute('aria-modal', 'true')
+        sidebar.setAttribute('aria-hidden', String(!opened))
+      } else {
+        sidebar.removeAttribute('role')
+        sidebar.removeAttribute('aria-modal')
+        sidebar.removeAttribute('aria-hidden')
+      }
+      if (opened) close.focus()
+      else if (restoreFocus && wasOpen && compact.matches) menu.focus()
+    }
+
+    menu.addEventListener('click', function () { setOpen(!opened, true) })
+    close.addEventListener('click', function () { setOpen(false, true) })
+    overlay.addEventListener('click', function () { setOpen(false, true) })
+    sidebar.addEventListener('click', function (event) {
+      if (event.target.closest('a[href]')) setOpen(false, true)
+    })
+    document.addEventListener('keydown', function (event) {
+      if (!opened) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false, true)
+      } else if (event.key === 'Tab') {
+        var items = sidebar.querySelectorAll('a[href], button:not(:disabled), [tabindex="0"]')
+        var first = items[0]
+        var last = items[items.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+    })
+    compact.addEventListener('change', function () {
+      var focusedInSidebar = sidebar.contains(document.activeElement)
+      var focusedOnMenu = document.activeElement === menu
+      setOpen(false, false)
+      if (compact.matches && focusedInSidebar) menu.focus()
+      else if (!compact.matches && (focusedInSidebar || focusedOnMenu)) {
+        var activeLink = sidebar.querySelector('.is-active') || sidebar.querySelector('a[href]')
+        if (activeLink) activeLink.focus()
+      }
+    })
+    setOpen(false, false)
+  }
+
   global.FacultyLinkUI = {
     logoMarkup: logoMarkup,
     mountLogos: mountLogos,
     assetPrefix: assetPrefix,
+    initPortalNavigation: initPortalNavigation,
   }
 })(window)

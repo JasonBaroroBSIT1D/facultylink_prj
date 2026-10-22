@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
 import '../../widgets/fl_summary_card.dart';
+import '../../widgets/fl_evaluation_period_card.dart';
 import '../documents/upload_document_screen.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -98,6 +99,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                             icon: const Icon(Icons.notifications_outlined),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: FlEvaluationPeriodCard(
+                        onSubmit: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const UploadDocumentScreen())),
                       ),
                     ),
                   ),

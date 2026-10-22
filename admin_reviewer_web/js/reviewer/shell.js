@@ -24,7 +24,7 @@
         '</div>'
       section.items.forEach(function (item) {
         var active = item.id === pageId ? ' is-active' : ''
-        html += '<a class="admin-nav-link' + active + '" href="' + item.href + '">' + item.label + '</a>'
+        html += '<a class="admin-nav-link' + active + '" href="' + item.href + '"' + (active ? ' aria-current="page"' : '') + '>' + item.label + '</a>'
       })
       html += '</div>'
     })
@@ -45,16 +45,17 @@
   document.body.classList.add('admin-portal')
   document.body.innerHTML =
     '<div class="admin-layout">' +
-    '<aside class="admin-sidebar" id="admin-sidebar">' +
+    '<aside class="admin-sidebar" id="admin-sidebar" aria-label="reviewer navigation">' +
     '<div class="admin-sidebar__brand"><div data-fl-logo data-logo-mode="nav" data-variant="light" data-size="sm"></div>' +
     '<p style="margin:8px 0 0;font-size:0.75rem;opacity:0.75">Reviewer Portal</p></div>' +
-    '<nav class="admin-sidebar__nav" aria-label="Reviewer">' +
+    '<button type="button" class="admin-sidebar__close" id="admin-menu-close" aria-label="Close navigation">Close <span aria-hidden="true">&times;</span></button>' +
+    '<nav tabindex="0" class="admin-sidebar__nav" aria-label="Reviewer">' +
     buildNav() +
     '</nav></aside>' +
-    '<div class="admin-overlay" id="admin-overlay"></div>' +
+    '<div class="admin-overlay" id="admin-overlay" aria-hidden="true"></div>' +
     '<div class="admin-main">' +
     '<header class="admin-header">' +
-    '<button type="button" class="admin-header__menu" id="admin-menu-btn" aria-label="Toggle menu">' +
+    '<button type="button" class="admin-header__menu" id="admin-menu-btn" aria-label="Open navigation" aria-controls="admin-sidebar" aria-expanded="false">' +
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
     '<div class="admin-header__search"><input type="search" placeholder="Search documents, faculty…" aria-label="Search" /></div>' +
     '<div class="admin-header__actions">' +
@@ -73,19 +74,17 @@
 
   FacultyLinkUI.mountLogos()
 
-  var sidebar = document.getElementById('admin-sidebar')
-  var overlay = document.getElementById('admin-overlay')
-  document.getElementById('admin-menu-btn').addEventListener('click', function () {
-    sidebar.classList.toggle('is-open')
-    overlay.classList.toggle('is-visible')
-  })
-  overlay.addEventListener('click', function () {
-    sidebar.classList.remove('is-open')
-    overlay.classList.remove('is-visible')
-  })
+  FacultyLinkUI.initPortalNavigation()
   document.getElementById('reviewer-sign-out').addEventListener('click', function () {
-    FacultyLinkMockAuth.clearSession()
-    window.location.href = '../login.html'
+    var done = function () {
+      window.location.href = '../login.html'
+    }
+    if (FacultyLinkMockAuth.signOut) {
+      FacultyLinkMockAuth.signOut().finally(done)
+    } else {
+      FacultyLinkMockAuth.clearSession()
+      done()
+    }
   })
 
   var container = document.getElementById('reviewer-content')

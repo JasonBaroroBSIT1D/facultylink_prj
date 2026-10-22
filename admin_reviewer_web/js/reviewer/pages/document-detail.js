@@ -89,6 +89,7 @@ window.ReviewerPageInit = function (el, h) {
       '<p style="font-size:0.8rem;color:var(--fl-text-muted)">' +
       doc.reviewer.note +
       '</p>' +
+      '<p class="reviewer-note" id="period-review-access" role="status"></p>' +
       '<div class="admin-toolbar" style="margin-top:16px">' +
       '<button type="button" class="fl-btn fl-btn--primary" id="btn-verify">Confirm verification (mock)</button>' +
       '<button type="button" class="fl-btn fl-btn--ghost" id="btn-revision">Request revision (mock)</button>' +
@@ -111,7 +112,33 @@ window.ReviewerPageInit = function (el, h) {
     })
 
     var modal = document.getElementById('review-modal')
+    var periodId = FacultyLinkReviewerUtils.queryParam('period')
+    var assignedActivities = []
+    var accessNote = document.getElementById('period-review-access')
+    function selectedPeriod() {
+      var rows = FacultyLinkEvaluationPeriods.list().filter(function (p) {
+        return (!periodId || p.id === periodId) && assignedActivities.some(function (a) { return a.periodId === p.id })
+      })
+      return FacultyLinkEvaluationPeriods.focus(rows.filter(function (p) { return FacultyLinkEvaluationPeriods.permitted(p, 'reviewer') })) || FacultyLinkEvaluationPeriods.focus(rows)
+    }
+    function setAccess(allowed, message) {
+      ;['btn-verify', 'btn-revision', 'btn-reject', 'review-comments'].forEach(function (id) {
+        document.getElementById(id).disabled = !allowed
+      })
+      accessNote.textContent = message
+    }
+    function refreshAccess() {
+      var period = selectedPeriod()
+      setAccess(FacultyLinkEvaluationPeriods.permitted(period, 'reviewer'), period ? FacultyLinkPeriodUI.accessMessage(period, 'reviewer') :
+        'Read-only: no evaluation activity is assigned to you for this document in the selected period.')
+    }
+    setAccess(false, 'Checking evaluation-period access…')
+    Promise.all([FacultyLinkReviewerApi.listEvaluationPeriods(), FacultyLinkReviewerApi.listEvaluationActivities()]).then(function (data) {
+      assignedActivities = data[1].filter(function (a) { return a.facultyId === doc.facultyId })
+      FacultyLinkPeriodUI.watch(refreshAccess)
+    }).catch(function () { setAccess(false, 'Evaluation access is unavailable. Return to Evaluation Schedule and try again.') })
     function showMock(title, body) {
+      if (!FacultyLinkEvaluationPeriods.permitted(selectedPeriod(), 'reviewer')) { refreshAccess(); return }
       document.getElementById('modal-title').textContent = title
       document.getElementById('modal-body').textContent = body
       modal.showModal()

@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       FacultyLinkMockAuth.saveSession({
-        email: email.trim().toLowerCase(),
+        email: result.email || email.trim().toLowerCase(),
         role: result.role,
         displayName: result.displayName,
       })

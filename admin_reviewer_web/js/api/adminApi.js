@@ -15,13 +15,37 @@
     getDashboardSummary: function () {
       return Promise.resolve(mock.dashboardSummary)
     },
-    /** GET /api/admin/faculty */
+    /** GET /api/v1/admin/users?role=faculty */
     listFaculty: function () {
-      return Promise.resolve(mock.faculty)
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/users?role=faculty').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load faculty accounts.')
+        return result.body.users
+      })
     },
-    /** GET /api/admin/reviewers */
+    /** GET /api/v1/admin/users?role=reviewer */
     listReviewers: function () {
-      return Promise.resolve(mock.reviewers)
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/users?role=reviewer').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load reviewer accounts.')
+        return result.body.users
+      })
+    },
+    createUser: function (payload) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to create account.')
+        return result.body.user
+      })
+    },
+    updateUser: function (userId, payload) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/users/' + userId, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to update account.')
+        return result.body.user
+      })
     },
     /** GET /api/admin/kra-config */
     getKraConfig: function () {
@@ -31,25 +55,95 @@
           : []
       return Promise.resolve({ _mock: true, kras: kras })
     },
-    /** GET /api/admin/evaluation-schedule */
-    listEvaluationSchedule: function () {
-      return Promise.resolve(
-        global.FacultyLinkEvaluationSchedule
-          ? global.FacultyLinkEvaluationSchedule.list()
-          : []
+    listEvaluationPeriods: function () {
+      if (!global.FacultyLinkAdminHttp) {
+        return global.FacultyLinkEvaluationPeriods.ready().then(function () {
+          return global.FacultyLinkEvaluationPeriods.list()
+        })
+      }
+      return global.FacultyLinkAdminHttp.adminFetch('/evaluation-periods').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load evaluation periods.')
+        global.__facultylinkPeriodsFromServer = true
+        global.FacultyLinkEvaluationPeriods.replaceAll(result.body.periods || [])
+        return result.body.periods || []
+      })
+    },
+    saveEvaluationPeriod: function (entry, id, acknowledgeOverlap) {
+      if (!global.FacultyLinkAdminHttp) {
+        return global.FacultyLinkEvaluationPeriods.ready().then(function () {
+          if ((global.FacultyLinkMockAuth.loadSession() || {}).role !== 'admin') throw new Error('Administrator access required.')
+          return global.FacultyLinkEvaluationPeriods.write(entry, id, acknowledgeOverlap)
+        })
+      }
+      var payload = Object.assign({}, entry, { acknowledgeOverlap: !!acknowledgeOverlap })
+      var path = id ? '/admin/evaluation-periods/' + encodeURIComponent(id) : '/admin/evaluation-periods'
+      return global.FacultyLinkAdminHttp.adminFetch(path, {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      }).then(function (result) {
+        if (!result.ok) {
+          if (result.status === 409 && result.body.overlaps) {
+            var overlapError = new Error(result.body.message || 'Overlapping evaluation period.')
+            overlapError.validation = { overlaps: result.body.overlaps }
+            throw overlapError
+          }
+          if (result.body.fields) {
+            var validationError = new Error(result.body.message || 'Check the evaluation period details.')
+            validationError.validation = { errors: result.body.fields }
+            throw validationError
+          }
+          throw new Error(result.body.message || 'Unable to save evaluation period.')
+        }
+        return global.FacultyLinkAdminApi.listEvaluationPeriods()
+      })
+    },
+    closeEvaluationPeriod: function (id) {
+      if (!global.FacultyLinkAdminHttp) {
+        return global.FacultyLinkEvaluationPeriods.ready().then(function () {
+          if ((global.FacultyLinkMockAuth.loadSession() || {}).role !== 'admin') throw new Error('Administrator access required.')
+          return global.FacultyLinkEvaluationPeriods.close(id)
+        })
+      }
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/evaluation-periods/' + encodeURIComponent(id) + '/close-early', {
+        method: 'POST',
+        body: '{}',
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to close evaluation period.')
+        return global.FacultyLinkAdminApi.listEvaluationPeriods()
+      })
+    },
+    listReviewerAssignments: function (reviewerId) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/reviewers/' + reviewerId + '/assignments').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load assignments.')
+        return result.body.assignments
+      })
+    },
+    listAssignmentCandidates: function (reviewerId, query) {
+      var q = query ? '?q=' + encodeURIComponent(query) : ''
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/reviewers/' + reviewerId + '/assignment-candidates' + q).then(
+        function (result) {
+          if (!result.ok) throw new Error(result.body.message || 'Unable to load faculty list.')
+          return result.body.candidates
+        }
       )
     },
-    saveEvaluationSchedule: function (entry) {
-      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
-      return Promise.resolve(global.FacultyLinkEvaluationSchedule.add(entry))
+    assignFacultyToReviewer: function (reviewerId, facultyIds) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/reviewers/' + reviewerId + '/assignments', {
+        method: 'POST',
+        body: JSON.stringify({ faculty_ids: facultyIds }),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to assign faculty.')
+        return result.body
+      })
     },
-    updateEvaluationSchedule: function (id, patch) {
-      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
-      return Promise.resolve(global.FacultyLinkEvaluationSchedule.update(id, patch))
-    },
-    cancelEvaluationSchedule: function (id) {
-      if (!global.FacultyLinkEvaluationSchedule) return notConnected()
-      return Promise.resolve(global.FacultyLinkEvaluationSchedule.cancel(id))
+    updateReviewerAssignment: function (assignmentId, payload) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/reviewer-assignments/' + assignmentId, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to update assignment.')
+        return result.body.assignment
+      })
     },
     /** GET /api/admin/scoring-rules */
     getScoringRules: function () {

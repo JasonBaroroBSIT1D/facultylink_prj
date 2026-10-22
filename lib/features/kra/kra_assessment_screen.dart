@@ -3,6 +3,7 @@ import '../../core/kra/kra_structure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
+import '../../widgets/fl_evaluation_period_card.dart';
 import 'kra_indicator_detail_screen.dart';
 
 class KraAssessmentScreen extends StatefulWidget {
@@ -38,6 +39,10 @@ class _KraAssessmentScreenState extends State<KraAssessmentScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 12, bottom: 8),
+                  child: FlEvaluationPeriodCard(),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
                   child: Text(

@@ -1,6 +1,31 @@
-window.ReviewerPageInit = function (el) {
+window.ReviewerPageInit = async function (el) {
   var facultyId = FacultyLinkReviewerUtils.queryParam('faculty') || 'F-001'
+  var periodId = FacultyLinkReviewerUtils.queryParam('period')
+  if (periodId) {
+    try {
+      var periodData = await Promise.all([FacultyLinkReviewerApi.listEvaluationPeriods(), FacultyLinkReviewerApi.listEvaluationActivities()])
+      var period = periodData[0].find(function (p) { return p.id === periodId })
+      var assigned = periodData[1].some(function (a) { return a.periodId === periodId && a.facultyId === facultyId })
+      if (!assigned || !FacultyLinkEvaluationPeriods.permitted(period, 'reviewer')) {
+        el.innerHTML = '<h1 class="admin-page-title">Assessment unavailable</h1><p class="admin-page-desc">' +
+          FacultyLinkPeriodUI.esc(assigned ? FacultyLinkPeriodUI.accessMessage(period, 'reviewer') : 'This activity is not assigned to you for the selected period.') +
+          '</p><a href="evaluation-schedule.html" class="fl-btn fl-btn--primary">Back to Evaluation Schedule</a>'
+        return
+      }
+    } catch (_) {
+      el.innerHTML = '<p class="admin-empty">Unable to check evaluation access. <a href="evaluation-schedule.html">Return to Evaluation Schedule</a></p>'
+      return
+    }
+  }
   FacultyLinkReviewerApi.getKraAssessment(facultyId).then(function (data) {
+    if (!data) {
+      el.innerHTML = '<p class="admin-empty">Faculty not found.</p><a href="assigned-faculty.html">Back to Assigned Faculty</a>'
+      return
+    }
+    if (!data.kras.length) {
+      el.innerHTML = '<p class="admin-empty">No KRA configuration available.</p><a href="assigned-faculty.html">Back to Assigned Faculty</a>'
+      return
+    }
     function renderIndicator(ind) {
       var sem =
         ind.semesters &&
@@ -32,7 +57,14 @@ window.ReviewerPageInit = function (el) {
           ? '<p><strong>Semester records (illustrative):</strong></p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Term</th><th>Rating</th><th>Duplicate warning</th></tr></thead><tbody>' +
             sem +
             '</tbody></table></div>'
-          : '') +
+          : '<p class="admin-empty-hint">No semester records available for this faculty member.</p>') +
+        '<p><strong>Submitted documents (sample data):</strong></p>' +
+        (ind.documents.length
+          ? '<ul>' + ind.documents.map(function (doc) {
+              return '<li><a href="document-detail.html?id=' + encodeURIComponent(doc.id) + (periodId ? '&amp;period=' + encodeURIComponent(periodId) : '') + '">' +
+                doc.title + '</a> — ' + doc.status + '</li>'
+            }).join('') + '</ul>'
+          : '<p class="admin-empty-hint">No sample documents available for this faculty member.</p>') +
         '<p><strong>Aggregated indicator score:</strong> ' +
         (ind.aggregatedScore || 'Not Yet Calculated') +
         '</p>' +

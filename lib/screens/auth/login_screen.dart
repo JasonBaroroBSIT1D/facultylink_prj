@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/shell/main_shell.dart';
+import '../../services/auth/auth_api.dart';
+import '../../services/evaluation_period_controller.dart';
 import '../../widgets/fl_auth_shell.dart';
 import '../../widgets/fl_logo.dart';
 import '../../widgets/fl_primary_button.dart';
@@ -33,11 +35,41 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    Navigator.of(context).pushReplacementNamed(MainShell.routeName);
+    try {
+      final user = await AuthApi.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (!mounted) return;
+      if (user.role != 'faculty') {
+        await AuthApi.logout();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Admin and reviewer accounts must use the web portal.'),
+          ),
+        );
+        return;
+      }
+      if (!mounted) return;
+      await EvaluationPeriodController.instance.refresh();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(MainShell.routeName);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to reach the FacultyLink API. Check your connection.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override

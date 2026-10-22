@@ -129,10 +129,6 @@
                 code: 'A.1',
                 title: 'Student Evaluation (SET)',
                 evidence: ['Aggregated SET reports by academic year'],
-                semesters: [
-                  { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                  { term: '2nd Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                ],
                 aggregatedScore: 'Not Yet Calculated',
                 validation: 'Mock — display backend SET aggregation when integrated.',
               },
@@ -140,9 +136,6 @@
                 code: 'A.2',
                 title: 'Supervisor Evaluation (SEF)',
                 evidence: ['SEF summary sheets'],
-                semesters: [
-                  { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
-                ],
                 aggregatedScore: 'Not Yet Calculated',
                 validation: 'Mock — semesters shown for review; final indicator score from backend.',
               },

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "timezone": "Asia/Manila",
+  "periods": [
+    { "id": "EP-2026-09", "name": "Midyear Evaluation AY 2025–2026", "academicYear": "AY 2025–2026", "semester": "Midyear", "opensAt": "2026-09-01T08:00:00+08:00", "closesAt": "2026-09-30T23:59:00+08:00", "description": "Completed demonstration period for faculty self-assessment.", "submissionEnabled": true, "reviewEnabled": true },
+    { "id": "EP-2026-10", "name": "First Semester Preparation AY 2026–2027", "academicYear": "AY 2026–2027", "semester": "First Semester", "opensAt": "2026-10-01T08:00:00+08:00", "closesAt": "2026-10-31T23:59:00+08:00", "description": "Organize academic evidence and review assigned KRA accomplishments ahead of the semester evaluation.", "submissionEnabled": true, "reviewEnabled": true },
+    { "id": "EP-2026-11", "name": "First Semester AY 2026–2027", "academicYear": "AY 2026–2027", "semester": "First Semester", "opensAt": "2026-11-01T08:00:00+08:00", "closesAt": "2026-11-30T23:59:00+08:00", "description": "Submission and review window for faculty self-assessment and advisory rank simulation.", "submissionEnabled": true, "reviewEnabled": true }
+  ]
+}

@@ -7,9 +7,13 @@ import '../../models/document_status.dart';
 import '../../core/kra/kra_structure.dart';
 import '../../services/mock/faculty_mock_data.dart';
 import '../../widgets/fl_primary_button.dart';
+import '../../widgets/fl_evaluation_period_card.dart';
+import '../../services/evaluation_period_controller.dart';
 
 class UploadDocumentScreen extends StatefulWidget {
-  const UploadDocumentScreen({super.key});
+  const UploadDocumentScreen({super.key, this.periodController});
+
+  final EvaluationPeriodController? periodController;
 
   @override
   State<UploadDocumentScreen> createState() => _UploadDocumentScreenState();
@@ -23,9 +27,21 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
   String? _criterion;
   DocumentStatus? _demoState;
   bool _simulating = false;
+  late final EvaluationPeriodController _periods =
+      widget.periodController ?? EvaluationPeriodController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _periods.addListener(_periodChanged);
+    _periods.refresh();
+  }
+
+  void _periodChanged() { if (mounted) setState(() {}); }
 
   @override
   void dispose() {
+    _periods.removeListener(_periodChanged);
     _titleController.dispose();
     super.dispose();
   }
@@ -47,6 +63,11 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
   }
 
   Future<void> _simulateSubmit() async {
+    if (!_periods.canSubmit) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Submissions are not permitted for the selected evaluation period.')));
+      return;
+    }
+    final period = _periods.current!;
     if (_file == null || _kra == null || _criterion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select file, KRA, and criterion.')),
@@ -63,11 +84,20 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     ];
     for (final s in steps) {
       if (!mounted) return;
+      if (!period.submissionsAllowedAt(_periods.now)) {
+        setState(() => _simulating = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The evaluation period has closed. Submission was not completed.')));
+        return;
+      }
       setState(() => _demoState = s);
       await Future<void>.delayed(const Duration(milliseconds: 700));
     }
     if (!mounted) return;
     setState(() => _simulating = false);
+    if (!period.submissionsAllowedAt(_periods.now)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The evaluation period has closed. Submission was not completed.')));
+      return;
+    }
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -104,7 +134,12 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              OutlinedButton.icon(onPressed: _pickFile, icon: const Icon(Icons.attach_file), label: const Text('Select PDF or image')),
+              IgnorePointer(
+                ignoring: _simulating,
+                child: FlEvaluationPeriodCard(controller: _periods),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(onPressed: _simulating ? null : _pickFile, icon: const Icon(Icons.attach_file), label: const Text('Select PDF or image')),
               if (_file != null) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -172,9 +207,9 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
               ],
               const SizedBox(height: 24),
               FlPrimaryButton(
-                label: _simulating ? 'Processing…' : 'Submit (mock workflow)',
+                label: _simulating ? 'Processing…' : !_periods.canSubmit ? 'Submissions unavailable' : 'Submit (mock workflow)',
                 loading: _simulating,
-                onPressed: _simulating ? null : _simulateSubmit,
+                onPressed: _simulating || !_periods.canSubmit ? null : _simulateSubmit,
               ),
             ],
           ),

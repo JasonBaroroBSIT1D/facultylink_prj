@@ -2,7 +2,7 @@
 
 .reviewer-doc-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
   margin-bottom: 24px;
 }
@@ -25,6 +25,7 @@
 
 .reviewer-preview__toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 12px;
   background: rgba(0, 0, 0, 0.35);
@@ -115,6 +116,11 @@
   padding: 0;
   max-width: 480px;
   width: calc(100% - 32px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   box-shadow: var(--fl-shadow-md);
 }
 
@@ -128,6 +134,7 @@
 
 .reviewer-modal__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
@@ -142,6 +149,9 @@
 
 .admin-filter-bar input,
 .admin-filter-bar select {
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 240px;
   padding: 10px 12px;
   border-radius: var(--fl-radius-sm);
   border: 1.5px solid var(--fl-border);
@@ -150,6 +160,7 @@
 
 .reviewer-split-panels {
   display: grid;
+  min-width: 0;
   gap: 16px;
 }
 

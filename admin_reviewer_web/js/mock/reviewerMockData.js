@@ -21,7 +21,7 @@
         { time: 'Yesterday', text: 'Verified SET aggregation display for Dr. Reyes — KRA I-A.1 (mock).' },
       ],
       attention: [
-        { id: 'DOC-8819', faculty: 'Juan Miguel Santos', title: 'Syllabus — CS 101', status: 'Needs Verification' },
+        { id: 'DOC-8819', faculty: 'Juan Miguel Santos', title: 'Course syllabus — EDUC 210', status: 'Needs Verification' },
         { id: 'DOC-8804', faculty: 'Elena V. Cruz', title: 'Extension report', status: 'Rejected' },
       ],
     },
@@ -41,6 +41,14 @@
         rank: 'Instructor I',
         status: 'Verification pending',
         documents: 11,
+      },
+      {
+        id: 'F-003',
+        name: 'Elena V. Cruz',
+        department: 'College of Arts & Sciences',
+        rank: 'Associate Professor II',
+        status: 'Evidence rejected',
+        documents: 8,
       },
       {
         id: 'F-004',
@@ -129,14 +137,50 @@
         },
         reviewer: { authorized: true, note: 'Reviewer may approve, reject, or request revision when API connected.' },
       },
+      {
+        id: 'DOC-8804',
+        facultyId: 'F-003',
+        faculty: 'Elena V. Cruz',
+        title: 'Extension report',
+        fileType: 'PDF',
+        kra: 'KRA III',
+        criterion: 'A',
+        indicator: 'A.1 Extension project (illustrative)',
+        uploaded: '2026-10-15',
+        validationStatus: 'Failed mandatory rules',
+        reviewStatus: 'Rejected',
+        previewUrl: SAMPLE_PDF,
+        ocr: {
+          text: 'Text extraction failed for the submitted extension report (mock).',
+          fields: [],
+          gaps: ['Unreadable report scan (mock).'],
+        },
+        validation: {
+          checks: [
+            { name: 'Document readability', result: 'fail', detail: 'Report text could not be extracted (mock).' },
+            { name: 'Evidence completeness', result: 'fail', detail: 'Required evidence could not be verified (mock).' },
+          ],
+          overall: 'Mandatory checks failed — document rejected (mock).',
+          needsVerificationReason: null,
+        },
+        reviewer: { authorized: true, note: 'A readable replacement is needed before reassessment (mock).' },
+      },
     ],
-    kraAssessment: {
-      facultyId: 'F-001',
-      facultyName: 'Maria Clara Reyes',
-      get kras() {
-        return global.FacultyLinkKraStructure
-          ? FacultyLinkKraStructure.buildReviewerKras()
-          : []
+    kraAssessments: {
+      'F-001': {
+        indicators: {
+          'kra1/A/A.1': {
+            semesters: [
+              { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
+              { term: '2nd Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
+            ],
+          },
+          'kra1/A/A.2': {
+            semesters: [
+              { term: '1st Sem AY 2024–2025', rating: 'Awaiting backend aggregation', duplicate: false },
+            ],
+          },
+        },
       },
     },
     rankSimulation: [
@@ -153,6 +197,12 @@
         missing: 'Backend rank simulation pending (mock).',
         status: 'Advisory preview only',
       },
+    ],
+    evaluationActivities: [
+      { id: 'EA-01', periodId: 'EP-2026-10', reviewerId: 'R-01', facultyId: 'F-001', title: 'Review KRA accomplishments', faculty: 'Maria Clara Reyes' },
+      { id: 'EA-02', periodId: 'EP-2026-10', reviewerId: 'R-01', facultyId: 'F-002', title: 'Verify supporting evidence', faculty: 'Juan Miguel Santos' },
+      { id: 'EA-03', periodId: 'EP-2026-11', reviewerId: 'R-01', facultyId: 'F-004', title: 'Review semester assessment', faculty: 'Roberto D. Lim' },
+      { id: 'EA-04', periodId: 'EP-2026-11', reviewerId: 'R-02', facultyId: 'F-002', title: 'Review semester assessment', faculty: 'Juan Miguel Santos' },
     ],
     evaluationHistory: [
       {
