@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'core/theme/app_theme.dart';
 import 'features/shell/main_shell.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/mandatory_change_password_screen.dart';
+import 'screens/auth/password_reset_success_screen.dart';
 import 'screens/welcome/welcome_screen.dart';
 
 class FacultyLinkApp extends StatelessWidget {
@@ -19,6 +22,8 @@ class FacultyLinkApp extends StatelessWidget {
         WelcomeScreen.routeName: (_) => const WelcomeScreen(),
         LoginScreen.routeName: (_) => const LoginScreen(),
         ForgotPasswordScreen.routeName: (_) => const ForgotPasswordScreen(),
+        MandatoryChangePasswordScreen.routeName: (_) => const MandatoryChangePasswordScreen(),
+        PasswordResetSuccessScreen.routeName: (_) => const PasswordResetSuccessScreen(),
         MainShell.routeName: (_) => const MainShell(),
       },
     );

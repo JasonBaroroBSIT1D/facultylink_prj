@@ -62,6 +62,22 @@ def main() -> None:
     if hasattr(signal, "SIGBREAK"):
         signal.signal(signal.SIGBREAK, _shutdown)
 
+    import socket
+
+    def _port_in_use(port: int, host: str = "127.0.0.1") -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.4)
+            return sock.connect_ex((host, port)) == 0
+
+    if _port_in_use(5000) or _port_in_use(8765):
+        print(
+            "ERROR: Port 5000 and/or 8765 is already in use.\n"
+            "  Stop every other FacultyLink process (Ctrl+C on old terminals, or Task Manager),\n"
+            "  then run python run.py once.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     api = _start("Flask API", BACKEND_DIR, "app.py")
     web = _start("Admin/Reviewer web", WEB_DIR, "serve.py")
 
@@ -77,6 +93,7 @@ def main() -> None:
     print("FacultyLink is running (PostgreSQL must be started separately).")
     print(f"  API:              {API_URL}")
     print(f"  Admin & Reviewer: {WEB_URL}/login.html")
+    print("  (Web server proxies /api/v1 to Flask — use only this URL for sign-in.)")
     print("")
     print("Press Ctrl+C to stop both services.")
     print("You can still run backend and web individually with:")

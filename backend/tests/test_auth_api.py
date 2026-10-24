@@ -1,4 +1,4 @@
-"""Phase 4.3 authentication and user management tests (uses live facultylink_db)."""
+"""Phase 4.3 authentication and user management tests (isolated TEST_DATABASE_URL)."""
 from __future__ import annotations
 
 import sys
@@ -11,13 +11,12 @@ sys.path.insert(0, str(BACKEND))
 
 from auth.jwt_service import clear_revoked_for_tests  # noqa: E402
 from app import create_app  # noqa: E402
-from config import Config  # noqa: E402
 from extensions import db  # noqa: E402
 from models import User  # noqa: E402
+from tests.test_config import IsolatedTestConfig  # noqa: E402
 
 
-class TestConfig(Config):
-    TESTING = True
+class TestConfig(IsolatedTestConfig):
     JWT_ACCESS_TTL_SECONDS = 3600
 
 

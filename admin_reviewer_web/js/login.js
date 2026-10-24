@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   }
 
+  var notice = new URLSearchParams(window.location.search).get('notice')
+  if (notice === 'use-temp-password' && errorEl) {
+    errorEl.textContent =
+      'Account setup links are no longer used. Sign in with the temporary password from your welcome email, then change your password.'
+    errorEl.hidden = false
+    errorEl.classList.add('login-form__error--info')
+  }
+
   if (!form) return
 
   form.addEventListener('submit', function (e) {
@@ -58,6 +66,11 @@ document.addEventListener('DOMContentLoaded', function () {
         role: result.role,
         displayName: result.displayName,
       })
+
+      if (result.mustChangePassword || (result.user && result.user.must_change_password)) {
+        window.location.href = 'change-password-required.html'
+        return
+      }
 
       if (result.role === 'admin') {
         window.location.href = 'admin/dashboard.html'

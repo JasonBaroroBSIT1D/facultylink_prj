@@ -17,6 +17,8 @@ EXPECTED_TABLES = frozenset(
         "kra_indicators",
         "kra_scores",
         "notifications",
+        "password_tokens",
+        "password_reset_otps",
         "rank_simulations",
         "review_decisions",
         "review_feedback",

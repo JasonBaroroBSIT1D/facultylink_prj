@@ -10,7 +10,7 @@ body.auth-html {
   min-height: 100vh;
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 460px);
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 500px);
   overflow-x: hidden;
 }
 

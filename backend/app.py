@@ -10,11 +10,16 @@ from api import register_api
 from config import Config
 from errors import register_error_handlers
 from extensions import db
+from testing_db_guard import assert_testing_uses_isolated_database
 
 
 def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
+    assert_testing_uses_isolated_database(
+        bool(app.config.get("TESTING")),
+        str(app.config.get("SQLALCHEMY_DATABASE_URI") or ""),
+    )
 
     logging.basicConfig(
         level=logging.DEBUG if app.config.get("DEBUG") else logging.INFO,

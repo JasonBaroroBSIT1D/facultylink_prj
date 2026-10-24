@@ -8,6 +8,7 @@ import '../../widgets/fl_logo.dart';
 import '../../widgets/fl_primary_button.dart';
 import '../../widgets/fl_text_field.dart';
 import 'forgot_password_screen.dart';
+import 'mandatory_change_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,11 +37,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
     try {
-      final user = await AuthApi.login(
+      final result = await AuthApi.login(
         _emailController.text,
         _passwordController.text,
       );
       if (!mounted) return;
+      if (result.mustChangePassword) {
+        Navigator.of(context).pushReplacementNamed(MandatoryChangePasswordScreen.routeName);
+        return;
+      }
+      final user = result.user;
       if (user.role != 'faculty') {
         await AuthApi.logout();
         if (!mounted) return;

@@ -9,15 +9,11 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app import create_app  # noqa: E402
-from config import Config  # noqa: E402
+from tests.test_config import IsolatedTestConfig as TestConfig  # noqa: E402
 from extensions import db  # noqa: E402
 from models import User  # noqa: E402
 from models.faculty_profile import FacultyProfile  # noqa: E402
 from tests.test_auth_api import _admin_cookie, _fetch_csrf, _login, _persist_web_cookie  # noqa: E402
-
-
-class TestConfig(Config):
-    TESTING = True
 
 
 def test_list_faculty_and_reviewers_from_db():
@@ -77,6 +73,64 @@ def test_create_update_and_cleanup_accounts():
         headers={"X-CSRF-Token": csrf},
     )
     assert dup.status_code == 409
+
+    with app.app_context():
+        db.session.query(FacultyProfile).filter_by(user_id=user_id).delete()
+        db.session.query(User).filter_by(user_id=user_id).delete()
+        db.session.commit()
+
+
+def test_create_faculty_without_employee_number():
+    app = create_app(TestConfig)
+    client = app.test_client()
+    _admin_cookie(client)
+    csrf = _fetch_csrf(client)
+    faculty_email = f"faculty-auto-{uuid.uuid4().hex[:8]}@facultylink.test"
+    created = client.post(
+        "/api/v1/admin/users",
+        json={
+            "role": "faculty",
+            "email": faculty_email,
+            "full_name": "Auto ID Faculty",
+            "department": "Testing",
+            "password": "TempPass123",
+        },
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert created.status_code == 201, created.get_json()
+    body = created.get_json()
+    user_id = body["user"]["user_id"]
+    emp = body["user"]["faculty_profile"]["employee_number"]
+    assert emp and emp.startswith("FL-")
+
+    with app.app_context():
+        db.session.query(FacultyProfile).filter_by(user_id=user_id).delete()
+        db.session.query(User).filter_by(user_id=user_id).delete()
+        db.session.commit()
+
+
+def test_create_faculty_without_employee_number():
+    app = create_app(TestConfig)
+    client = app.test_client()
+    _admin_cookie(client)
+    csrf = _fetch_csrf(client)
+    faculty_email = f"faculty-auto-{uuid.uuid4().hex[:8]}@facultylink.test"
+    created = client.post(
+        "/api/v1/admin/users",
+        json={
+            "role": "faculty",
+            "email": faculty_email,
+            "full_name": "Auto ID Faculty",
+            "department": "Testing",
+            "password": "TempPass123",
+        },
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert created.status_code == 201, created.get_json()
+    body = created.get_json()
+    user_id = body["user"]["user_id"]
+    emp = body["user"]["faculty_profile"]["employee_number"]
+    assert emp and emp.startswith("FL-")
 
     with app.app_context():
         db.session.query(FacultyProfile).filter_by(user_id=user_id).delete()

@@ -29,6 +29,8 @@ class Config:
         "DATABASE_URL",
         f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
     )
+    # Pytest must set TEST_DATABASE_URL (see backend/testing_db_guard.py); not used at runtime.
+    TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
@@ -46,6 +48,33 @@ class Config:
     AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "0").lower() in ("1", "true", "yes")
     AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
     CSRF_COOKIE_NAME = os.getenv("CSRF_COOKIE_NAME", "facultylink_csrf")
+
+    SMTP_HOST = os.getenv("SMTP_HOST", "")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+    _smtp_password_raw = os.getenv("SMTP_PASSWORD", "")
+    SMTP_PASSWORD = _smtp_password_raw.replace(" ", "") if _smtp_password_raw else ""
+    SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USERNAME or "")
+    SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in ("1", "true", "yes")
+    WEB_PORTAL_BASE_URL = os.getenv("WEB_PORTAL_BASE_URL", "http://127.0.0.1:8765").rstrip("/")
+    MOBILE_APP_DEEP_LINK_BASE = os.getenv("MOBILE_APP_DEEP_LINK_BASE", "facultylink://setup").strip()
+    MOBILE_SETUP_HTTPS_URL = os.getenv("MOBILE_SETUP_HTTPS_URL", "").strip()
+    PASSWORD_TOKEN_TTL_HOURS = int(os.getenv("PASSWORD_TOKEN_TTL_HOURS", "72"))
+    MAIL_SUPPRESS_SEND = False
+    AUTH_FORGOT_PASSWORD_RATE_LIMIT = int(os.getenv("AUTH_FORGOT_PASSWORD_RATE_LIMIT", "5"))
+    AUTH_FORGOT_PASSWORD_RATE_WINDOW = int(os.getenv("AUTH_FORGOT_PASSWORD_RATE_WINDOW", "900"))
+    AUTH_RESEND_INVITE_RATE_LIMIT = int(os.getenv("AUTH_RESEND_INVITE_RATE_LIMIT", "10"))
+    AUTH_RESEND_INVITE_RATE_WINDOW = int(os.getenv("AUTH_RESEND_INVITE_RATE_WINDOW", "3600"))
+    AUTH_PASSWORD_TOKEN_RATE_LIMIT = int(os.getenv("AUTH_PASSWORD_TOKEN_RATE_LIMIT", "30"))
+    AUTH_PASSWORD_TOKEN_RATE_WINDOW = int(os.getenv("AUTH_PASSWORD_TOKEN_RATE_WINDOW", "900"))
+    OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))
+    OTP_RESEND_COOLDOWN_SECONDS = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "60"))
+    OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+    TEMP_PASSWORD_TTL_HOURS = int(os.getenv("TEMP_PASSWORD_TTL_HOURS", "72"))
+
+    @staticmethod
+    def smtp_configured() -> bool:
+        return bool(Config.SMTP_HOST and Config.SMTP_USERNAME and Config.SMTP_PASSWORD and Config.SMTP_FROM_EMAIL)
 
     @staticmethod
     def psycopg_conninfo() -> str:

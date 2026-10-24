@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from flask import Blueprint, current_app, jsonify
 
+from auth import mailer as mailer_module
 from db.schema import check_database_connection, verify_public_schema
 from extensions import db
 
@@ -30,7 +33,21 @@ def health():
                 ),
                 503,
             )
-        return jsonify({"status": "ok", "service": service, "database": "connected"}), 200
+        mailer_path = Path(mailer_module.__file__).resolve()
+        payload = {
+            "status": "ok",
+            "service": service,
+            "database": "connected",
+            "auth_onboarding": {
+                "mode": "temporary_password",
+                "create_account_email": "send_welcome_credentials_email",
+                "resend_credentials_email": "send_welcome_credentials_email",
+                "forgot_password": "otp_6_digit",
+                "invitation_setup_codes": False,
+                "mailer_module": str(mailer_path),
+            },
+        }
+        return jsonify(payload), 200
     except Exception as exc:
         current_app.logger.error("Health check database failure: %s", exc.__class__.__name__)
         return (

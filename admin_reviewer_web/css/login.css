@@ -7,23 +7,26 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(28px, 5vw, 56px);
+  padding: clamp(24px, 4vw, 48px) clamp(28px, 5vw, 56px);
   color: var(--fl-white);
   min-height: 100vh;
   min-height: 100dvh;
+  gap: clamp(20px, 3vw, 32px);
 }
 
-.auth-brand__top {
-  position: absolute;
-  top: clamp(20px, 4vw, 32px);
-  left: clamp(20px, 4vw, 32px);
+.auth-brand__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .auth-brand__inner {
   max-width: 560px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .auth-brand__badge {
@@ -57,7 +60,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  margin: 4px 0 16px;
+  margin: 4px 0 12px;
   max-width: 420px;
 }
 
@@ -103,8 +106,8 @@
 }
 
 .auth-brand__footer {
-  margin-top: auto;
-  padding-top: 24px;
+  margin-top: 8px;
+  padding-top: 16px;
   font-size: 0.82rem;
   opacity: 0.75;
 }
@@ -113,17 +116,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 4vw, 40px);
+  padding: clamp(24px, 4vw, 48px);
   min-height: 100vh;
   min-height: 100dvh;
 }
 
 .login-card {
-  width: 100%;
-  max-width: 420px;
+  width: min(100%, 468px);
+  max-width: 468px;
   background: var(--fl-white);
   border-radius: var(--fl-radius-xl);
-  padding: clamp(26px, 4vw, 34px);
+  padding: clamp(28px, 4.5vw, 40px);
   box-shadow: var(--fl-shadow-md);
   border: 1px solid var(--fl-border);
 }
@@ -131,7 +134,7 @@
 .login-card__logo {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .login-card h2 {
@@ -143,13 +146,13 @@
 .login-card__sub {
   color: var(--fl-text-muted);
   font-size: 0.92rem;
-  margin: 8px 0 28px;
+  margin: 10px 0 26px;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .login-form__row {
@@ -195,6 +198,12 @@
 
 .login-form__error[hidden] {
   display: none;
+}
+
+.login-form__error--info {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.25);
+  color: var(--fl-primary-navy, #0f2744);
 }
 
 .login-form__success {
@@ -247,7 +256,9 @@
 @media (max-width: 960px) {
   .auth-brand {
     min-height: auto;
-    padding-bottom: 12px;
+    padding-bottom: 16px;
+    justify-content: flex-start;
+    padding-top: clamp(20px, 4vw, 28px);
   }
 
   .auth-brand__footer {
@@ -256,6 +267,24 @@
 
   .auth-form-panel {
     min-height: auto;
-    padding-top: 0;
+    padding-top: 8px;
+    padding-bottom: 32px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-brand {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .auth-form-panel {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

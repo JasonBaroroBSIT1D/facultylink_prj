@@ -5,6 +5,11 @@
 (function (global) {
   const PROFILE_KEY = 'facultylink_user_profile'
   const API_BASE = function () {
+    if (global.FacultyLinkApiOrigin) return global.FacultyLinkApiOrigin()
+    var loc = global.location
+    if (loc && loc.protocol && loc.protocol.indexOf('http') === 0 && loc.host) {
+      return loc.origin
+    }
     return global.FACULTYLINK_API_BASE || 'http://127.0.0.1:5000'
   }
 
@@ -40,9 +45,13 @@
       })
       .then(function (result) {
         if (!result.response.ok) {
+          var message = result.body.message || 'Sign in failed. Check your credentials and try again.'
+          if (result.response.status === 401) {
+            message = result.body.message || 'Invalid email or password.'
+          }
           return {
             ok: false,
-            message: result.body.message || 'Sign in failed. Check your credentials and try again.',
+            message: message,
           }
         }
         var user = result.body.user
@@ -52,6 +61,7 @@
           displayName: user.full_name,
           email: user.email,
           user: user,
+          mustChangePassword: !!(result.body.must_change_password || user.must_change_password),
         }
       })
       .catch(function () {
@@ -71,7 +81,14 @@
       .then(function (response) {
         if (!response.ok) return null
         return response.json().then(function (body) {
-          return body.user
+          var user = body.user
+          if (user && (user.must_change_password || user.must_set_password)) {
+            var path = global.location.pathname || ''
+            if (path.indexOf('change-password-required.html') < 0) {
+              global.location.href = 'change-password-required.html'
+            }
+          }
+          return user
         })
       })
       .catch(function () {

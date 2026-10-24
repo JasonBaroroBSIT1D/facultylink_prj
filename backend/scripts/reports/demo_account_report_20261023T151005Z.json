@@ -1,0 +1,55 @@
+{
+  "generated_at": "2026-10-23T15:10:05.859152+00:00",
+  "database": "facultylink_db",
+  "demo_accounts": [
+    {
+      "found": true,
+      "user_id": 3,
+      "email": "faculty@facultylink.edu",
+      "role": "faculty",
+      "full_name": "Demo Faculty",
+      "is_active": true,
+      "dependencies": {
+        "documents": 0,
+        "reviewer_assignments_as_faculty": 0,
+        "kra_scores": 0,
+        "rank_simulations": 0,
+        "reviewer_assignments_as_reviewer": 0,
+        "review_decisions": 0,
+        "notifications": 0
+      },
+      "faculty_profile": {
+        "faculty_id": 1,
+        "employee_number": "FAC-DEMO-001",
+        "department": "For Testing",
+        "college": "For Testing",
+        "current_rank": null
+      },
+      "safe_to_delete": true
+    },
+    {
+      "found": true,
+      "user_id": 2,
+      "email": "reviewer@facultylink.edu",
+      "role": "reviewer",
+      "full_name": "Faculty Reviewer",
+      "is_active": true,
+      "dependencies": {
+        "reviewer_assignments_as_reviewer": 0,
+        "review_decisions": 0,
+        "notifications": 0
+      },
+      "safe_to_delete": true
+    }
+  ],
+  "admin_preserved": "admin@facultylink.edu",
+  "proposed_cleanup_steps": [
+    "1. Back up users, faculty_profiles, and dependent rows for the two demo emails.",
+    "2. DELETE reviewer_assignments referencing demo faculty_id or reviewer_id (if any).",
+    "3. DELETE faculty_profiles for demo faculty user_id.",
+    "4. DELETE users WHERE email IN ('faculty@facultylink.edu', 'reviewer@facultylink.edu').",
+    "5. Do NOT delete admin@facultylink.edu.",
+    "6. Remove UI filter in productionAccounts.js after DB cleanup (optional)."
+  ],
+  "connected_database": "facultylink_db"
+}

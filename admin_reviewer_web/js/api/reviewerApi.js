@@ -1,5 +1,5 @@
 /**
- * Reviewer API — future Flask REST integration.
+ * Reviewer API — Flask REST integration.
  */
 (function (global) {
   var mock = global.FacultyLinkReviewerMock
@@ -8,15 +8,45 @@
     return Promise.reject(new Error('Backend not connected'))
   }
 
+  function requireHttp() {
+    if (!global.FacultyLinkReviewerHttp) {
+      throw new Error('Unable to reach the FacultyLink API.')
+    }
+  }
+
   global.FacultyLinkReviewerApi = {
+    getCurrentUser: function () {
+      requireHttp()
+      return global.FacultyLinkReviewerHttp.reviewerFetch('/auth/me').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load your profile.')
+        return result.body.user
+      })
+    },
+    changePassword: function (currentPassword, newPassword) {
+      requireHttp()
+      return global.FacultyLinkReviewerHttp.reviewerFetch('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to change password.')
+        return result.body.message || 'Password updated.'
+      })
+    },
     getDashboard: function () {
       return Promise.resolve(mock.dashboard)
     },
     listAssignedFaculty: function (query) {
+      requireHttp()
       var q = query ? '?q=' + encodeURIComponent(query) : ''
       return global.FacultyLinkReviewerHttp.reviewerFetch('/reviewer/assigned-faculty' + q).then(function (result) {
+        if (result.status === 401 || result.status === 403) {
+          throw new Error(result.body.message || 'You do not have access to this resource.')
+        }
         if (!result.ok) throw new Error(result.body.message || 'Unable to load assigned faculty.')
-        return result.body.faculty
+        return result.body.faculty || []
       })
     },
     getFacultyOverview: function (id) {
@@ -66,8 +96,12 @@
             var record = assessment.indicators[kra.id + '/' + criterion.code + '/' + indicator.code] || {}
             return Object.assign({}, indicator, JSON.parse(JSON.stringify(record)), {
               documents: mock.documents.filter(function (d) {
-                return d.facultyId === facultyId && d.kra === kraKey &&
-                  d.criterion === criterion.code && d.indicator.split(' ')[0] === indicator.code
+                return (
+                  d.facultyId === facultyId &&
+                  d.kra === kraKey &&
+                  d.criterion === criterion.code &&
+                  d.indicator.split(' ')[0] === indicator.code
+                )
               }).map(function (d) {
                 return { id: d.id, title: d.title, status: d.reviewStatus }
               }),
@@ -95,9 +129,7 @@
       })
     },
     listEvaluationActivities: function () {
-      var session = global.FacultyLinkMockAuth && global.FacultyLinkMockAuth.loadSession()
-      var reviewerId = session && session.reviewerId ? session.reviewerId : 'R-01'
-      return Promise.resolve(mock.evaluationActivities.filter(function (a) { return a.reviewerId === reviewerId }))
+      return Promise.resolve(mock.evaluationActivities)
     },
     listRankSimulations: function () {
       return Promise.resolve(mock.rankSimulation)
@@ -107,9 +139,6 @@
     },
     listNotifications: function () {
       return Promise.resolve(mock.notifications)
-    },
-    getSettings: function () {
-      return Promise.resolve(mock.settings)
     },
     submitReviewDecision: function () {
       return notConnected()

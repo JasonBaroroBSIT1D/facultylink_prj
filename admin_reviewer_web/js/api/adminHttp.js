@@ -1,8 +1,17 @@
 (function (global) {
   var csrfToken = null
 
+  function apiOrigin() {
+    if (global.FacultyLinkApiOrigin) return global.FacultyLinkApiOrigin()
+    var loc = global.location
+    if (loc && loc.protocol && loc.protocol.indexOf('http') === 0 && loc.host) {
+      return loc.origin
+    }
+    return global.FACULTYLINK_API_BASE || 'http://127.0.0.1:5000'
+  }
+
   function apiBase() {
-    return (global.FACULTYLINK_API_BASE || 'http://127.0.0.1:5000') + '/api/v1'
+    return apiOrigin() + '/api/v1'
   }
 
   function readCsrfCookie() {
@@ -49,11 +58,20 @@
         credentials: 'include',
         headers: headers,
         body: options.body,
-      }).then(function (response) {
-        return response.json().then(function (body) {
-          return { ok: response.ok, status: response.status, body: body }
-        })
       })
+        .then(function (response) {
+          return response
+            .json()
+            .catch(function () {
+              return { message: 'Unexpected server response.' }
+            })
+            .then(function (body) {
+              return { ok: response.ok, status: response.status, body: body }
+            })
+        })
+        .catch(function () {
+          return Promise.reject(new Error('Unable to reach the FacultyLink API. Check that the server is running.'))
+        })
     })
   }
 

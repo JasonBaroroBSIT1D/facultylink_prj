@@ -1,4 +1,5 @@
 (function () {
+  function startShell() {
   var pageId = document.body.getAttribute('data-admin-page') || 'dashboard'
   var session = FacultyLinkMockAuth.loadSession()
 
@@ -10,6 +11,7 @@
       'Needs Revision': 'warning',
       Rejected: 'danger',
       'On leave': 'muted',
+      Inactive: 'muted',
       Complete: 'success',
       Partial: 'warning',
       Failed: 'danger',
@@ -19,16 +21,7 @@
   }
 
   function buildNav() {
-    var html = ''
-    FacultyLinkAdminNav.forEach(function (section) {
-      html += '<div class="admin-nav-section"><div class="admin-nav-section__label">' + section.section + '</div>'
-      section.items.forEach(function (item) {
-        var active = item.id === pageId ? ' is-active' : ''
-        html += '<a class="admin-nav-link' + active + '" href="' + item.href + '"' + (active ? ' aria-current="page"' : '') + '>' + item.label + '</a>'
-      })
-      html += '</div>'
-    })
-    return html
+    return FacultyLinkPortalNav.build(FacultyLinkAdminNav, pageId)
   }
 
   function initials(name) {
@@ -89,5 +82,15 @@
   var container = document.getElementById('admin-content')
   if (typeof window.AdminPageInit === 'function') {
     window.AdminPageInit(container, { statusBadge: statusBadge })
+  }
+  }
+
+  var ready = window.FacultyLinkAdminAuthReady
+  if (ready && typeof ready.then === 'function') {
+    ready.then(function (ok) {
+      if (ok) startShell()
+    })
+  } else {
+    startShell()
   }
 })()

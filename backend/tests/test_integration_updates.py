@@ -10,16 +10,13 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app import create_app  # noqa: E402
-from config import Config  # noqa: E402
 from extensions import db  # noqa: E402
 from models import FacultyProfile, User  # noqa: E402
 from models.evaluation_period import EvaluationPeriod  # noqa: E402
+from tests.helpers import delete_test_user_cascade  # noqa: E402
 from tests.test_auth_api import _admin_cookie, _fetch_csrf, _login, _persist_web_cookie  # noqa: E402
+from tests.test_config import IsolatedTestConfig as TestConfig  # noqa: E402
 from api.v1.reviewer_queue import queue_count_for_reviewer  # noqa: E402
-
-
-class TestConfig(Config):
-    TESTING = True
 
 
 def test_reviewer_queue_count_matches_service():
@@ -44,45 +41,64 @@ def test_reassign_moves_faculty_between_reviewers():
         reviewer_a = User.query.filter_by(email="reviewer@facultylink.edu").first().user_id
     csrf = _fetch_csrf(client)
     email = f"reviewer2-{uuid.uuid4().hex[:6]}@facultylink.test"
-    created = client.post(
-        "/api/v1/admin/users",
-        json={"role": "reviewer", "email": email, "full_name": "Temp Reviewer 2", "password": "TempPass123"},
-        headers={"X-CSRF-Token": csrf},
-    )
-    reviewer_b = created.get_json()["user"]["user_id"]
+    reviewer_b: int | None = None
+    assignment_id: int | None = None
+    try:
+        created = client.post(
+            "/api/v1/admin/users",
+            json={"role": "reviewer", "email": email, "full_name": "Temp Reviewer 2", "password": "TempPass123"},
+            headers={"X-CSRF-Token": csrf},
+        )
+        reviewer_b = created.get_json()["user"]["user_id"]
 
-    csrf = _fetch_csrf(client)
-    assign = client.post(
-        f"/api/v1/admin/reviewers/{reviewer_a}/assignments",
-        json={"faculty_ids": [faculty_id]},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assignment_id = assign.get_json()["assignments"][0]["assignment_id"]
+        csrf = _fetch_csrf(client)
+        assign = client.post(
+            f"/api/v1/admin/reviewers/{reviewer_a}/assignments",
+            json={"faculty_ids": [faculty_id]},
+            headers={"X-CSRF-Token": csrf},
+        )
+        assignment_id = assign.get_json()["assignments"][0]["assignment_id"]
 
-    csrf = _fetch_csrf(client)
-    moved = client.patch(
-        f"/api/v1/admin/reviewer-assignments/{assignment_id}",
-        json={"reviewer_id": reviewer_b},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert moved.status_code == 200
+        csrf = _fetch_csrf(client)
+        moved = client.patch(
+            f"/api/v1/admin/reviewer-assignments/{assignment_id}",
+            json={"reviewer_id": reviewer_b},
+            headers={"X-CSRF-Token": csrf},
+        )
+        assert moved.status_code == 200
 
-    rev_a = app.test_client()
-    res = _login(rev_a, "reviewer@facultylink.edu", "demo-reviewer")
-    _persist_web_cookie(rev_a, res)
-    assert rev_a.get("/api/v1/reviewer/assigned-faculty").get_json()["faculty"] == []
+        rev_a = app.test_client()
+        res = _login(rev_a, "reviewer@facultylink.edu", "demo-reviewer")
+        _persist_web_cookie(rev_a, res)
+        assert rev_a.get("/api/v1/reviewer/assigned-faculty").get_json()["faculty"] == []
 
-    rev_b = app.test_client()
-    res = _login(rev_b, email, "TempPass123", client_type="web")
-    _persist_web_cookie(rev_b, res)
-    assert any(f["faculty_id"] == faculty_id for f in rev_b.get("/api/v1/reviewer/assigned-faculty").get_json()["faculty"])
-
-    with app.app_context():
-        from models.reviewer_assignment import ReviewerAssignment
-
-        db.session.query(ReviewerAssignment).filter_by(reviewer_id=reviewer_b).delete()
-        db.session.query(User).filter_by(user_id=reviewer_b).delete()
-        db.session.commit()
+        rev_b = app.test_client()
+        res = _login(rev_b, email, "TempPass123", client_type="web")
+        _persist_web_cookie(rev_b, res)
+        changed = rev_b.post(
+            "/api/v1/auth/complete-mandatory-password",
+            json={
+                "temporary_password": "TempPass123",
+                "new_password": "ReviewerPass123",
+                "confirm_password": "ReviewerPass123",
+            },
+        )
+        assert changed.status_code == 200, changed.get_json()
+        res = _login(rev_b, email, "ReviewerPass123", client_type="web")
+        _persist_web_cookie(rev_b, res)
+        assigned = rev_b.get("/api/v1/reviewer/assigned-faculty").get_json()
+        assert any(f["faculty_id"] == faculty_id for f in assigned["faculty"])
+    finally:
+        if assignment_id is not None:
+            csrf = _fetch_csrf(client)
+            client.patch(
+                f"/api/v1/admin/reviewer-assignments/{assignment_id}",
+                json={"reviewer_id": reviewer_a},
+                headers={"X-CSRF-Token": csrf},
+            )
+        if reviewer_b is not None:
+            with app.app_context():
+                delete_test_user_cascade(reviewer_b)
 
 
 def test_faculty_read_only_evaluation_periods():

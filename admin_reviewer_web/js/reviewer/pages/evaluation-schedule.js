@@ -67,13 +67,22 @@ window.ReviewerPageInit = function (el) {
   }
 
   el.innerHTML = '<p class="ep-empty" role="status">Loading evaluation schedule…</p>'
+  function reloadFromServer() {
+    return FacultyLinkReviewerApi.listEvaluationPeriods().then(paint)
+  }
+
   FacultyLinkReviewerHttp.ensureCsrf()
     .then(function () {
-      return FacultyLinkReviewerApi.listEvaluationPeriods()
+      return reloadFromServer()
     })
     .then(function () {
       store.subscribe(paint)
       paint()
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+          reloadFromServer().catch(function () {})
+        }
+      })
     })
     .catch(function () {
       el.innerHTML =

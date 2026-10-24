@@ -10,16 +10,12 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app import create_app  # noqa: E402
-from config import Config  # noqa: E402
+from tests.test_config import IsolatedTestConfig as TestConfig  # noqa: E402
 from extensions import db  # noqa: E402
 from models import FacultyProfile, User  # noqa: E402
 from models.evaluation_period import EvaluationPeriod  # noqa: E402
 from models.reviewer_assignment import ReviewerAssignment  # noqa: E402
 from tests.test_auth_api import _admin_cookie, _fetch_csrf, _login, _persist_web_cookie  # noqa: E402
-
-
-class TestConfig(Config):
-    TESTING = True
 
 
 def _faculty_id(app) -> int:
@@ -126,18 +122,31 @@ def test_evaluation_period_crud_and_reviewer_read():
     reviewer = app.test_client()
     res = _login(reviewer, "reviewer@facultylink.edu", "demo-reviewer")
     _persist_web_cookie(reviewer, res)
+    admin_list = client.get("/api/v1/evaluation-periods")
+    assert admin_list.status_code == 200
     periods = reviewer.get("/api/v1/evaluation-periods")
     assert periods.status_code == 200
-    assert any(p["period_id"] == period_id for p in periods.get_json()["periods"])
+    admin_periods = admin_list.get_json()["periods"]
+    reviewer_periods = periods.get_json()["periods"]
+    assert admin_periods == reviewer_periods
+    assert any(p["period_id"] == period_id for p in reviewer_periods)
 
     csrf = _fetch_csrf(client)
     updated = client.patch(
         f"/api/v1/admin/evaluation-periods/{period_id}",
-        json={"reviewEnabled": True},
+        json={"reviewEnabled": True, "acknowledgeOverlap": True},
         headers={"X-CSRF-Token": csrf},
     )
     assert updated.status_code == 200
     assert updated.get_json()["period"]["reviewEnabled"] is True
+
+    admin_list2 = client.get("/api/v1/evaluation-periods").get_json()["periods"]
+    reviewer_list2 = reviewer.get("/api/v1/evaluation-periods").get_json()["periods"]
+    assert admin_list2 == reviewer_list2
+    row = next(p for p in reviewer_list2 if p["period_id"] == period_id)
+    assert row["timezone"] == "Asia/Manila"
+    assert row["reviewEnabled"] is True
+    assert row["name"] == payload["name"]
 
     with app.app_context():
         db.session.query(EvaluationPeriod).filter_by(period_id=period_id).delete()
@@ -151,6 +160,8 @@ def test_reviewer_cannot_mutate_assignments_or_periods():
     _persist_web_cookie(client, res)
     csrf = _fetch_csrf(client)
     assert client.post("/api/v1/admin/evaluation-periods", json={}, headers={"X-CSRF-Token": csrf}).status_code == 403
+    assert client.patch("/api/v1/admin/evaluation-periods/1", json={}, headers={"X-CSRF-Token": csrf}).status_code == 403
+    assert client.post("/api/v1/admin/evaluation-periods/1/close-early", json={}, headers={"X-CSRF-Token": csrf}).status_code == 403
     assert (
         client.post("/api/v1/admin/reviewers/1/assignments", json={"faculty_ids": [1]}, headers={"X-CSRF-Token": csrf}).status_code
         == 403

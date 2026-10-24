@@ -7,7 +7,9 @@ from werkzeug.security import generate_password_hash
 
 from auth.csrf import validate_csrf
 from auth.decorators import roles_required
-from auth.services import create_user_account
+from auth.account_email import deliver_account_credentials
+from auth.rate_limit import rate_limit
+from auth.services import create_user_account, rotate_temporary_credentials
 from extensions import db
 from models import User
 
@@ -81,17 +83,17 @@ def create_user():
     body = request.get_json(silent=True) or {}
     role = (body.get("role") or "").strip().lower()
     email = (body.get("email") or "").strip()
-    password = body.get("password") or ""
+    password = body.get("password") or None
+    if password == "":
+        password = None
     full_name = (body.get("full_name") or "").strip()
 
     if role not in ("faculty", "reviewer"):
         return jsonify({"error": "validation_error", "message": "Role must be faculty or reviewer."}), 400
     if not email or not full_name:
         return jsonify({"error": "validation_error", "message": "Email and full name are required."}), 400
-    if not password:
-        return jsonify({"error": "validation_error", "message": "Initial password is required."}), 400
 
-    user, reason = create_user_account(
+    user, reason, temp_plain = create_user_account(
         email=email,
         password=password,
         role=role,
@@ -105,14 +107,39 @@ def create_user():
         messages = {
             "duplicate_email": "An account with this email already exists.",
             "duplicate_employee_number": "Employee number is already in use.",
-            "employee_number_required": "Employee number is required for faculty accounts.",
+            "employee_number_required": "Unable to assign a faculty profile identifier.",
             "password_too_short": "Password must be at least 8 characters.",
         }
         status = 409 if reason in ("duplicate_email", "duplicate_employee_number") else 400
         return jsonify({"error": reason, "message": messages.get(reason, "Unable to create account.")}), status
 
     created = User.query.options(joinedload(User.faculty_profile)).filter_by(user_id=user.user_id).first()
-    return jsonify({"user": _serialize_user(created)}), 201
+    email_delivery = deliver_account_credentials(created, temp_plain or "")
+    payload = {"user": _serialize_user(created), "email_delivery": email_delivery}
+    status = 201 if email_delivery.get("sent") else 201
+    return jsonify(payload), status
+
+
+@bp.post("/admin/users/<int:user_id>/resend-invitation")
+@roles_required("admin")
+@validate_csrf
+@rate_limit(
+    "resend_invitation",
+    max_calls_config="AUTH_RESEND_INVITE_RATE_LIMIT",
+    window_config="AUTH_RESEND_INVITE_RATE_WINDOW",
+    key_suffix=lambda: str(getattr(g, "current_user", None) and g.current_user.user_id or ""),
+)
+def resend_invitation(user_id: int):
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user:
+        return jsonify({"error": "not_found", "message": "User not found."}), 404
+    if user.role not in ("faculty", "reviewer"):
+        return jsonify({"error": "validation_error", "message": "Credentials apply to faculty and reviewer accounts."}), 400
+    if not user.is_active:
+        return jsonify({"error": "validation_error", "message": "Cannot send credentials to an inactive account."}), 400
+    temp_plain = rotate_temporary_credentials(user)
+    delivery = deliver_account_credentials(user, temp_plain)
+    return jsonify({"email_delivery": delivery, "user": _serialize_user(user)}), 200
 
 
 @bp.patch("/admin/users/<int:user_id>")
@@ -143,6 +170,7 @@ def update_user(user_id: int):
         if len(str(body["password"])) < 8:
             return jsonify({"error": "validation_error", "message": "Password must be at least 8 characters."}), 400
         user.password_hash = generate_password_hash(str(body["password"]))
+        user.must_set_password = False
 
     if user.role == "faculty":
         profile = user.faculty_profile

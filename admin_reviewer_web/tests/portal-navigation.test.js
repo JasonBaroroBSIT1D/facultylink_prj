@@ -71,6 +71,7 @@ function portal(width = 390, role = 'admin', page = 'dashboard') {
   app.window = app
   const run = (file) => vm.runInContext(read(file), app, { filename: file })
   run('js/components.js')
+  run('js/shared/portalNav.js')
   run(`js/${role}/nav-config.js`)
   run(`js/${role}/shell.js`)
   return {
@@ -170,10 +171,15 @@ for (const role of ['admin', 'reviewer']) {
       const markup = p.body.innerHTML
       const config = p.app[role === 'admin' ? 'FacultyLinkAdminNav' : 'FacultyLinkReviewerNav']
       const items = config.flatMap((section) => section.items)
-      assert.equal([...markup.matchAll(/class="admin-nav-link/g)].length, items.length, file)
+      assert.equal([...markup.matchAll(/class="admin-nav-link(?:\s|")/g)].length, items.length, file)
       assert.equal([...markup.matchAll(/aria-current="page"/g)].length, 1, file)
       const active = items.find((item) => item.id === page)
-      assert.ok(markup.includes(`class="admin-nav-link is-active" href="${active.href}" aria-current="page"`), file)
+      assert.ok(
+        markup.includes(`class="admin-nav-link is-active" href="${active.href}"`) &&
+          markup.includes(`aria-current="page"`),
+        file
+      )
+      assert.ok(markup.includes('admin-nav-link__icon'), file)
       for (const item of items) assert.ok(fs.existsSync(path.join(root, role, item.href)), item.href)
       assert.match(markup, /id="admin-menu-btn"[^>]*aria-controls="admin-sidebar"/)
       assert.match(markup, /id="admin-menu-close"[^>]*aria-label="Close navigation"/)

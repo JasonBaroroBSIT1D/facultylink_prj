@@ -10,7 +10,33 @@
   /** @type {import('../mock/adminMockData.js')} */
   var mock = global.FacultyLinkAdminMock
 
+  function requireHttp() {
+    if (!global.FacultyLinkAdminHttp) {
+      throw new Error('Unable to reach the FacultyLink API.')
+    }
+  }
+
   var AdminApi = {
+    getCurrentUser: function () {
+      requireHttp()
+      return global.FacultyLinkAdminHttp.adminFetch('/auth/me').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load your profile.')
+        return result.body.user
+      })
+    },
+    changePassword: function (currentPassword, newPassword) {
+      requireHttp()
+      return global.FacultyLinkAdminHttp.adminFetch('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to change password.')
+        return result.body.message || 'Password updated.'
+      })
+    },
     /** Replace with: GET /api/admin/dashboard */
     getDashboardSummary: function () {
       return Promise.resolve(mock.dashboardSummary)
@@ -35,7 +61,16 @@
         body: JSON.stringify(payload),
       }).then(function (result) {
         if (!result.ok) throw new Error(result.body.message || 'Unable to create account.')
-        return result.body.user
+        return { user: result.body.user, email_delivery: result.body.email_delivery }
+      })
+    },
+    resendInvitation: function (userId) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/users/' + userId + '/resend-invitation', {
+        method: 'POST',
+        body: '{}',
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to resend credentials.')
+        return { user: result.body.user, email_delivery: result.body.email_delivery }
       })
     },
     updateUser: function (userId, payload) {
@@ -49,11 +84,10 @@
     },
     /** GET /api/admin/kra-config */
     getKraConfig: function () {
-      var kras =
-        global.FacultyLinkKraStructure && global.FacultyLinkKraStructure.buildAdminKras
-          ? global.FacultyLinkKraStructure.buildAdminKras()
-          : []
-      return Promise.resolve({ _mock: true, kras: kras })
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/kra-configuration').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load KRA configuration.')
+        return result.body
+      })
     },
     listEvaluationPeriods: function () {
       if (!global.FacultyLinkAdminHttp) {

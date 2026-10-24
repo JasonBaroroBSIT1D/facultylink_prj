@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FlTextField extends StatefulWidget {
   const FlTextField({
@@ -10,6 +11,7 @@ class FlTextField extends StatefulWidget {
     this.textInputAction,
     this.autofillHints,
     this.validator,
+    this.inputFormatters,
   });
 
   final String label;
@@ -19,6 +21,7 @@ class FlTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
   final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<FlTextField> createState() => _FlTextFieldState();
@@ -42,6 +45,7 @@ class _FlTextFieldState extends State<FlTextField> {
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
       validator: widget.validator,
+      inputFormatters: widget.inputFormatters,
       decoration: InputDecoration(
         labelText: widget.label,
         suffixIcon: widget.obscureText

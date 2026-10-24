@@ -32,6 +32,16 @@ def _load_user_from_token() -> User | None:
     return user
 
 
+_PASSWORD_CHANGE_ALLOWED = frozenset(
+    {
+        "auth_v1.me",
+        "auth_v1.logout",
+        "auth_v1.complete_mandatory_password",
+        "auth_v1.csrf_token",
+    }
+)
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -40,6 +50,16 @@ def login_required(view):
             return jsonify({"error": "unauthorized", "message": "Authentication required."}), 401
         g.current_user = user
         g.auth_token = request.cookies.get(current_app.config["AUTH_COOKIE_NAME"]) or _extract_bearer()
+        if user.must_set_password and request.endpoint not in _PASSWORD_CHANGE_ALLOWED:
+            return (
+                jsonify(
+                    {
+                        "error": "password_change_required",
+                        "message": "You must change your temporary password before continuing.",
+                    }
+                ),
+                403,
+            )
         return view(*args, **kwargs)
 
     return wrapped

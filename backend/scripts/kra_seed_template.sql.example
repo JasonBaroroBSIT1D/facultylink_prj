@@ -1,0 +1,61 @@
+-- FacultyLink KRA seed template — EXAMPLE ONLY
+-- DO NOT RUN until guideline data is verified and explicitly approved.
+-- Uses existing schema (facultylink_complete_schema.sql). No schema changes.
+--
+-- Tier A: structural KRA + criterion letters (no indicators/scoring).
+-- Tier B: add kra_indicators + scoring_rules from official DBM–CHED extract.
+
+BEGIN;
+
+-- ---------------------------------------------------------------------------
+-- Tier A (structural) — replace placeholder names with official labels before run
+-- ---------------------------------------------------------------------------
+
+-- INSERT INTO kra_configurations (kra_code, kra_name, description, guideline_version, is_active)
+-- VALUES
+--   ('KRA I',   'Instruction',                          NULL, 'PENDING_GUIDELINE_VERSION', TRUE),
+--   ('KRA II',  'Research and Innovation',              NULL, 'PENDING_GUIDELINE_VERSION', TRUE),
+--   ('KRA III', 'Extension or Community Services',      NULL, 'PENDING_GUIDELINE_VERSION', TRUE),
+--   ('KRA IV',  'Professional Development',             NULL, 'PENDING_GUIDELINE_VERSION', TRUE);
+
+-- Example criterion rows (repeat for each kra_id from above; display_order 1..n):
+-- INSERT INTO kra_criteria (kra_id, criterion_code, criterion_name, description, display_order)
+-- VALUES
+--   ((SELECT kra_id FROM kra_configurations WHERE kra_code = 'KRA I'), 'A', 'Criterion A — pending official label', NULL, 1),
+--   ((SELECT kra_id FROM kra_configurations WHERE kra_code = 'KRA I'), 'B', 'Criterion B — pending official label', NULL, 2),
+--   ((SELECT kra_id FROM kra_configurations WHERE kra_code = 'KRA I'), 'C', 'Criterion C — pending official label', NULL, 3);
+
+-- KRA II: A, B, C  |  KRA III & IV: A, B, C, D  (14 criteria total)
+
+-- ---------------------------------------------------------------------------
+-- Tier B — indicators (one block per criterion; names/evidence from official doc)
+-- ---------------------------------------------------------------------------
+
+-- INSERT INTO kra_indicators (criterion_id, indicator_code, indicator_name, required_evidence, display_order)
+-- VALUES
+--   (
+--     (SELECT c.criterion_id FROM kra_criteria c
+--        JOIN kra_configurations k ON k.kra_id = c.kra_id
+--       WHERE k.kra_code = 'KRA I' AND c.criterion_code = 'A'),
+--     'A.1',
+--     'OFFICIAL_INDICATOR_NAME_HERE',
+--     'OFFICIAL_EVIDENCE_TEXT_HERE',
+--     1
+--   );
+
+-- ---------------------------------------------------------------------------
+-- Tier B — scoring_rules (rule_config must match backend scoring engine)
+-- ---------------------------------------------------------------------------
+
+-- INSERT INTO scoring_rules (indicator_id, rule_name, rule_type, rule_config, guideline_version, is_active)
+-- VALUES
+--   (
+--     (SELECT indicator_id FROM kra_indicators WHERE indicator_code = 'A.1' LIMIT 1),
+--     'OFFICIAL_RULE_NAME',
+--     'linear',
+--     '{"max_points": 0}'::jsonb,  -- replace 0 with verified value from guideline
+--     'PENDING_GUIDELINE_VERSION',
+--     TRUE
+--   );
+
+ROLLBACK;  -- keeps file safe if accidentally executed; change to COMMIT only after approval

@@ -1,6 +1,13 @@
 /* Shared, scoped evaluation-period interface; FacultyLink palette and controls. */
 .ep-page { max-width: 1440px; margin: 0 auto; color: var(--fl-text-primary); }
-.ep-page--config { max-width: 720px; }
+.ep-summary--dashboard { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
+.ep-form-section { border: none; margin: 0 0 18px; padding: 0; }
+.ep-form-section legend { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fl-primary-blue); padding: 0; margin-bottom: 10px; }
+.ep-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: 1px solid var(--fl-border); border-radius: 10px; margin-bottom: 10px; background: #fcfdff; }
+.ep-toggle-row__text { display: grid; gap: 4px; font-size: 0.78rem; }
+.ep-toggle-row__text strong { color: var(--fl-deep-navy); font-size: 0.86rem; }
+.ep-toggle-row__text span { color: var(--fl-text-muted); line-height: 1.45; }
+.ep-toggle { width: 42px; height: 24px; accent-color: var(--fl-primary-blue); }
 .ep-config-card { margin-top: 8px; }
 .ep-config-card__body { padding: 20px 22px 24px; }
 .ep-config-dl { margin: 0; display: grid; gap: 14px; }
@@ -10,9 +17,13 @@
 .ep-config-note { margin: 16px 0 0; font-size: 0.82rem; color: var(--fl-text-muted); line-height: 1.5; }
 .ep-config-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .ep-config-form .ep-form-grid { margin-bottom: 4px; }
+.ep-overlap-list { margin: 12px 0 0; padding-left: 18px; color: var(--fl-text-muted); font-size: 0.84rem; line-height: 1.55; }
+.ep-overlap-list li { margin-bottom: 8px; }
 @media (max-width: 640px) {
   .ep-config-dl div { grid-template-columns: 1fr; gap: 4px; }
   .ep-form-grid { grid-template-columns: 1fr; }
+  .ep-summary--dashboard { grid-template-columns: 1fr; }
+  .ep-page-head { flex-direction: column; align-items: flex-start; }
 }
 .ep-page-head, .ep-section-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .ep-page-head { margin-bottom: 22px; }
@@ -67,8 +78,15 @@
 .ep-row-actions .fl-btn { padding: 6px 8px; font-size: .72rem; }
 .ep-footnote { font-size: .7rem; line-height: 1.6; color: var(--fl-text-muted); margin: 16px 2px 0; }
 .ep-empty { text-align: center; padding: 28px 20px; color: var(--fl-text-muted); font-size: .85rem; }
+.ep-empty--compact { padding: 48px 24px; }
 .ep-empty h2, .ep-empty h3 { color: var(--fl-primary-navy); font-size: 1rem; margin-top: 0; }
 .ep-notice, .ep-access-note { border-radius: 8px; background: #edf5ff; border: 1px solid #d5e7ff; padding: 11px 14px; font-size: .8rem; margin: 0 0 16px; }
+.ep-notice--success { background: #e6f7ed; border-color: #b7e4c7; color: #137333; }
+.ep-settings__section { margin-bottom: 20px; }
+.ep-settings__section .admin-panel__body { padding: 20px 22px 24px; }
+.ep-settings__form { max-width: 420px; display: grid; gap: 14px; }
+.ep-settings__form .admin-form-field { margin: 0; }
+.admin-form-hint { margin: 0 0 16px; font-size: 0.82rem; line-height: 1.55; color: var(--fl-text-muted); }
 .ep-dialog { border: 1px solid var(--fl-border); border-radius: 16px; padding: 0; width: min(660px, calc(100vw - 32px)); max-height: 90vh; max-height: 90dvh; overflow: auto; overscroll-behavior: contain; overflow-wrap: anywhere; color: var(--fl-text-primary); box-shadow: var(--fl-shadow-md); }
 .ep-dialog::backdrop { background: rgba(7,27,56,.48); backdrop-filter: blur(3px); }
 .ep-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--fl-border); }

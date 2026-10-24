@@ -59,6 +59,7 @@
   function replaceAll(rows) {
     if (!validRows(rows)) throw new Error('Invalid evaluation-period data from server.')
     periods = copy(rows)
+    try { global.localStorage.removeItem(key) } catch (_) {}
     emit()
   }
   function usingServerSource() {
@@ -76,7 +77,7 @@
     return loading
   }
   function list() {
-    readStored()
+    if (!usingServerSource()) readStored()
     return copy(periods).sort(function (a, b) { return instant(a.opensAt) - instant(b.opensAt) })
   }
   function focus(rows, now) {
