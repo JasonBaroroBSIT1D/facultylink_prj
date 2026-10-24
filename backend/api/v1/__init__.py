@@ -11,7 +11,9 @@ from .admin_reviewer_assignments import bp as admin_reviewer_assignments_bp
 from .admin_users import bp as admin_users_bp
 from .auth_routes import bp as auth_bp
 from .evaluation_periods import bp as evaluation_periods_bp
+from .faculty_documents import bp as faculty_documents_bp
 from .kra_configuration import bp as kra_configuration_bp
+from .validation_scoring_config import bp as validation_scoring_config_bp
 from .health import bp as health_bp
 from .reviewer_assignments import bp as reviewer_assignments_bp
 
@@ -24,3 +26,5 @@ def register_v1_blueprints(app: Flask) -> None:
     app.register_blueprint(reviewer_assignments_bp, url_prefix="/api/v1")
     app.register_blueprint(evaluation_periods_bp, url_prefix="/api/v1")
     app.register_blueprint(kra_configuration_bp, url_prefix="/api/v1")
+    app.register_blueprint(validation_scoring_config_bp, url_prefix="/api/v1")
+    app.register_blueprint(faculty_documents_bp, url_prefix="/api/v1")

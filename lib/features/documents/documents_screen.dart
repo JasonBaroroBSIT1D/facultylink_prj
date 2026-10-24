@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/document_status.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
+import '../../services/api/faculty_api_exception.dart';
 import '../../core/kra/kra_structure.dart';
 import '../../widgets/fl_empty_state.dart';
 import '../../widgets/fl_status_badge.dart';
@@ -23,6 +24,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   String? _criterionFilter;
   String? _statusFilter;
   bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -31,12 +33,30 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _load() async {
-    final docs = await FacultyApi.listDocuments();
-    if (!mounted) return;
     setState(() {
-      _docs = docs;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final docs = await FacultyApi.listDocuments();
+      if (!mounted) return;
+      setState(() {
+        _docs = docs;
+        _loading = false;
+      });
+    } on FacultyApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = 'Unable to load documents.';
+      });
+    }
   }
 
   List<FacultyDocument> get _filtered {
@@ -136,6 +156,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
+                : _loadError != null
+                    ? FlEmptyState(message: _loadError!)
                 : _filtered.isEmpty
                     ? const FlEmptyState(message: 'No documents match your filters.')
                     : ListView.builder(

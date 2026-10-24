@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from auth.csrf import validate_csrf
@@ -9,6 +10,11 @@ from auth.decorators import roles_required
 from extensions import db
 from models import FacultyProfile, User
 from models.reviewer_assignment import ReviewerAssignment
+from services.reviewer_assignment_policy import (
+    FacultyAssignmentConflictError,
+    active_assignment_for_faculty,
+    set_active_reviewer_for_faculty,
+)
 
 bp = Blueprint("admin_reviewer_assignments_v1", __name__)
 
@@ -54,6 +60,10 @@ def _load_reviewer(reviewer_id: int) -> User | None:
     return user
 
 
+def _assignment_query_options():
+    return joinedload(ReviewerAssignment.faculty_profile).joinedload(FacultyProfile.user)
+
+
 @bp.get("/admin/reviewers/<int:reviewer_id>/assignments")
 @roles_required("admin")
 def list_reviewer_assignments(reviewer_id: int):
@@ -63,9 +73,7 @@ def list_reviewer_assignments(reviewer_id: int):
 
     active_only = request.args.get("active", "true").lower() != "false"
     query = (
-        ReviewerAssignment.query.options(
-            joinedload(ReviewerAssignment.faculty_profile).joinedload(FacultyProfile.user)
-        )
+        ReviewerAssignment.query.options(_assignment_query_options())
         .filter(ReviewerAssignment.reviewer_id == reviewer_id)
         .order_by(ReviewerAssignment.assigned_at.desc())
     )
@@ -83,15 +91,22 @@ def assignment_candidates(reviewer_id: int):
         return jsonify({"error": "not_found", "message": "Reviewer not found."}), 404
 
     q = (request.args.get("q") or "").strip().lower()
-    assigned_ids = {
-        row.faculty_id
-        for row in db.session.scalars(
+    assigned_ids = set(
+        db.session.scalars(
             select(ReviewerAssignment.faculty_id).where(
                 ReviewerAssignment.reviewer_id == reviewer_id,
                 ReviewerAssignment.is_active.is_(True),
             )
-        )
-    }
+        ).all()
+    )
+
+    active_rows = ReviewerAssignment.query.filter(ReviewerAssignment.is_active.is_(True)).all()
+    active_by_faculty = {row.faculty_id: row for row in active_rows}
+    reviewer_ids = {row.reviewer_id for row in active_rows}
+    reviewer_names: dict[int, str] = {}
+    if reviewer_ids:
+        for user in User.query.filter(User.user_id.in_(reviewer_ids)).all():
+            reviewer_names[user.user_id] = user.full_name or ""
 
     profiles = (
         FacultyProfile.query.options(joinedload(FacultyProfile.user))
@@ -115,16 +130,26 @@ def assignment_candidates(reviewer_id: int):
             ).lower()
             if q and q not in blob:
                 continue
-        candidates.append(
-            {
-                "faculty_id": profile.faculty_id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "department": profile.department,
-                "current_rank": profile.current_rank,
-                "already_assigned": profile.faculty_id in assigned_ids,
-            }
-        )
+        active = active_by_faculty.get(profile.faculty_id)
+        already_assigned = profile.faculty_id in assigned_ids
+        entry = {
+            "faculty_id": profile.faculty_id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "department": profile.department,
+            "current_rank": profile.current_rank,
+            "already_assigned": already_assigned,
+            "assigned_elsewhere": bool(active and not already_assigned),
+        }
+        if active:
+            entry["active_reviewer_id"] = active.reviewer_id
+            entry["active_reviewer_name"] = reviewer_names.get(active.reviewer_id, "")
+            entry["active_assignment_id"] = active.assignment_id
+        else:
+            entry["active_reviewer_id"] = None
+            entry["active_reviewer_name"] = None
+            entry["active_assignment_id"] = None
+        candidates.append(entry)
     return jsonify({"candidates": candidates})
 
 
@@ -165,36 +190,46 @@ def create_assignments(reviewer_id: int):
                 errors.append({"faculty_id": faculty_id, "reason": "inactive_or_invalid_faculty"})
                 continue
 
-            existing = ReviewerAssignment.query.filter_by(
-                reviewer_id=reviewer_id, faculty_id=faculty_id
-            ).first()
-            if existing:
-                if existing.is_active:
-                    skipped.append(faculty_id)
-                    continue
-                existing.is_active = True
-                existing.assigned_by = g.current_user.user_id
-                reactivated.append(faculty_id)
+            active = active_assignment_for_faculty(faculty_id)
+            if active and active.reviewer_id == reviewer_id:
+                skipped.append(faculty_id)
                 continue
 
-            row = ReviewerAssignment(
-                reviewer_id=reviewer_id,
-                faculty_id=faculty_id,
-                assigned_by=g.current_user.user_id,
-                is_active=True,
+            pair_exists = (
+                ReviewerAssignment.query.filter_by(reviewer_id=reviewer_id, faculty_id=faculty_id).first()
+                is not None
             )
-            db.session.add(row)
-            created.append(faculty_id)
+
+            set_active_reviewer_for_faculty(
+                faculty_id=faculty_id,
+                new_reviewer_id=reviewer_id,
+                assigned_by=g.current_user.user_id,
+            )
+            if pair_exists:
+                reactivated.append(faculty_id)
+            else:
+                created.append(faculty_id)
 
         db.session.commit()
+    except FacultyAssignmentConflictError:
+        db.session.rollback()
+        return jsonify(
+            {"error": "conflict", "message": "Assignment changed concurrently; refresh and try again."}
+        ), 409
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(
+            {
+                "error": "conflict",
+                "message": "This faculty member already has an active reviewer assignment.",
+            }
+        ), 409
     except Exception:
         db.session.rollback()
         return jsonify({"error": "server_error", "message": "Unable to save assignments."}), 500
 
     rows = (
-        ReviewerAssignment.query.options(
-            joinedload(ReviewerAssignment.faculty_profile).joinedload(FacultyProfile.user)
-        )
+        ReviewerAssignment.query.options(_assignment_query_options())
         .filter(
             ReviewerAssignment.reviewer_id == reviewer_id,
             ReviewerAssignment.is_active.is_(True),
@@ -217,56 +252,59 @@ def create_assignments(reviewer_id: int):
 @roles_required("admin")
 @validate_csrf
 def update_assignment(assignment_id: int):
-    row = ReviewerAssignment.query.options(
-        joinedload(ReviewerAssignment.faculty_profile).joinedload(FacultyProfile.user)
-    ).filter_by(assignment_id=assignment_id).first()
+    row = (
+        ReviewerAssignment.query.options(_assignment_query_options())
+        .filter_by(assignment_id=assignment_id)
+        .first()
+    )
     if not row:
         return jsonify({"error": "not_found", "message": "Assignment not found."}), 404
 
     body = request.get_json(silent=True) or {}
 
-    if "is_active" in body:
-        row.is_active = bool(body["is_active"])
-
-    if "reviewer_id" in body:
-        new_reviewer_id = int(body["reviewer_id"])
-        new_reviewer = _load_reviewer(new_reviewer_id)
-        if not new_reviewer or not new_reviewer.is_active:
-            return jsonify({"error": "validation_error", "message": "Target reviewer is invalid or inactive."}), 400
-        if new_reviewer_id == row.reviewer_id:
-            pass
-        else:
-            try:
-                with db.session.begin_nested():
-                    conflict = (
-                        ReviewerAssignment.query.filter_by(
-                            reviewer_id=new_reviewer_id, faculty_id=row.faculty_id
-                        )
-                        .with_for_update()
-                        .first()
-                    )
-                    if conflict and conflict.is_active and conflict.assignment_id != row.assignment_id:
-                        raise ValueError("duplicate_assignment")
-                    if conflict and not conflict.is_active:
-                        conflict.is_active = True
-                        conflict.assigned_by = g.current_user.user_id
-                        row.is_active = False
-                    else:
-                        row.reviewer_id = new_reviewer_id
-                        row.assigned_by = g.current_user.user_id
-                        row.is_active = True
-            except ValueError as exc:
-                if str(exc) == "duplicate_assignment":
-                    return jsonify(
-                        {
-                            "error": "duplicate_assignment",
-                            "message": "This faculty member is already assigned to the selected reviewer.",
-                        }
-                    ), 409
-                raise
-
     try:
+        if "reviewer_id" in body:
+            new_reviewer_id = int(body["reviewer_id"])
+            new_reviewer = _load_reviewer(new_reviewer_id)
+            if not new_reviewer or not new_reviewer.is_active:
+                return jsonify(
+                    {"error": "validation_error", "message": "Target reviewer is invalid or inactive."}
+                ), 400
+            active = active_assignment_for_faculty(row.faculty_id)
+            if not (
+                active
+                and active.reviewer_id == new_reviewer_id
+                and active.assignment_id == row.assignment_id
+            ):
+                target = set_active_reviewer_for_faculty(
+                    faculty_id=row.faculty_id,
+                    new_reviewer_id=new_reviewer_id,
+                    assigned_by=g.current_user.user_id,
+                )
+                row = (
+                    ReviewerAssignment.query.options(_assignment_query_options())
+                    .filter_by(assignment_id=target.assignment_id)
+                    .first()
+                    or row
+                )
+
+        if "is_active" in body and not body["is_active"]:
+            row.is_active = False
+
         db.session.commit()
+    except FacultyAssignmentConflictError:
+        db.session.rollback()
+        return jsonify(
+            {"error": "conflict", "message": "Assignment changed concurrently; refresh and try again."}
+        ), 409
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(
+            {
+                "error": "conflict",
+                "message": "This faculty member already has an active reviewer assignment.",
+            }
+        ), 409
     except Exception:
         db.session.rollback()
         return jsonify({"error": "server_error", "message": "Unable to update assignment."}), 500

@@ -15,7 +15,7 @@ class OcrResultsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
-            'Extracted via Tesseract on Flask backend when integrated. Below is mock UI data.',
+            'Extracted fields from the FacultyLink OCR pipeline (pypdf / Tesseract). Low-confidence values require reviewer verification.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 16),

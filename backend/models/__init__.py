@@ -1,3 +1,7 @@
+from .document import Document
+from .document_extraction import DocumentExtraction
+from .document_score_contribution import DocumentScoreContribution
+from .validation_result import ValidationResult
 from .evaluation_period import EvaluationPeriod
 from .faculty_profile import FacultyProfile
 from .kra_configuration import KraConfiguration, KraCriterion, KraIndicator, ScoringRule
@@ -12,6 +16,10 @@ __all__ = [
     "PasswordResetOtp",
     "FacultyProfile",
     "ReviewerAssignment",
+    "Document",
+    "DocumentExtraction",
+    "DocumentScoreContribution",
+    "ValidationResult",
     "EvaluationPeriod",
     "KraConfiguration",
     "KraCriterion",

@@ -32,9 +32,11 @@ def pytest_configure(config):  # noqa: ARG001
 
 def pytest_sessionstart(session):  # noqa: ARG001
     from app import create_app
+    from tests.apply_test_migrations import apply_phase1_on_test_db_from_env
     from tests.seed_test_accounts import seed_test_demo_accounts
     from tests.test_config import IsolatedTestConfig
 
+    apply_phase1_on_test_db_from_env()
     app = create_app(IsolatedTestConfig)
     with app.app_context():
         seed_test_demo_accounts()

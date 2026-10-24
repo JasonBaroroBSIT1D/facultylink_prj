@@ -72,6 +72,18 @@ class Config:
     OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
     TEMP_PASSWORD_TTL_HOURS = int(os.getenv("TEMP_PASSWORD_TTL_HOURS", "72"))
 
+    # Phase 1 document uploads (local storage; automatic approval disabled until Phase 2+).
+    DOCUMENT_STORAGE_ROOT = os.getenv(
+        "DOCUMENT_STORAGE_ROOT",
+        str(_ROOT / "backend" / "storage" / "documents"),
+    )
+    DOCUMENT_UPLOAD_MAX_BYTES = int(os.getenv("DOCUMENT_UPLOAD_MAX_BYTES", str(25 * 1024 * 1024)))
+    DOCUMENT_AUTO_APPROVAL_ENABLED = os.getenv("DOCUMENT_AUTO_APPROVAL_ENABLED", "0").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
     @staticmethod
     def smtp_configured() -> bool:
         return bool(Config.SMTP_HOST and Config.SMTP_USERNAME and Config.SMTP_PASSWORD and Config.SMTP_FROM_EMAIL)

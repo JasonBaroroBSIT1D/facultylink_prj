@@ -60,8 +60,17 @@ CREATE TABLE kra_indicators (
     indicator_code VARCHAR(30) NOT NULL,
     indicator_name VARCHAR(200) NOT NULL,
     required_evidence TEXT,
+    credit_uniqueness VARCHAR(40) NOT NULL DEFAULT 'per_evidence_hash'
+        CHECK (credit_uniqueness IN ('per_evidence_hash','one_active_credit_per_term')),
     display_order INTEGER NOT NULL DEFAULT 0,
     UNIQUE (criterion_id, indicator_code)
+);
+
+CREATE TABLE kra_criterion_operational_settings (
+    criterion_id BIGINT PRIMARY KEY REFERENCES kra_criteria(criterion_id) ON DELETE CASCADE,
+    confidence_thresholds JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by BIGINT REFERENCES users(user_id)
 );
 
 CREATE TABLE scoring_rules (
@@ -82,6 +91,7 @@ CREATE TABLE documents (
     faculty_id BIGINT NOT NULL REFERENCES faculty_profiles(faculty_id),
     criterion_id BIGINT NOT NULL REFERENCES kra_criteria(criterion_id),
     indicator_id BIGINT REFERENCES kra_indicators(indicator_id),
+    period_id BIGINT REFERENCES evaluation_periods(period_id),
     title VARCHAR(255) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,
     storage_key TEXT NOT NULL,
@@ -93,6 +103,48 @@ CREATE TABLE documents (
     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_documents_period_id ON documents (period_id);
+
+CREATE TABLE document_score_contributions (
+    contribution_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    document_id BIGINT NOT NULL REFERENCES documents(document_id) ON DELETE CASCADE,
+    faculty_id BIGINT NOT NULL REFERENCES faculty_profiles(faculty_id),
+    kra_id BIGINT REFERENCES kra_configurations(kra_id),
+    indicator_id BIGINT REFERENCES kra_indicators(indicator_id),
+    period_id BIGINT REFERENCES evaluation_periods(period_id),
+    academic_year VARCHAR(40) NOT NULL,
+    semester VARCHAR(60) NOT NULL,
+    evidence_sha256 CHAR(64),
+    credit_uniqueness_mode VARCHAR(40) NOT NULL DEFAULT 'per_evidence_hash'
+        CHECK (credit_uniqueness_mode IN ('per_evidence_hash','one_active_credit_per_term')),
+    credit_uniqueness_key VARCHAR(220),
+    guideline_version VARCHAR(100),
+    rule_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    system_calculated_points NUMERIC(12,4) NOT NULL DEFAULT 0 CHECK (system_calculated_points >= 0),
+    provisional_points NUMERIC(12,4) NOT NULL DEFAULT 0 CHECK (provisional_points >= 0),
+    reviewer_assigned_points NUMERIC(12,4) CHECK (reviewer_assigned_points IS NULL OR reviewer_assigned_points >= 0),
+    credited_points NUMERIC(12,4) NOT NULL DEFAULT 0 CHECK (credited_points >= 0),
+    credit_state VARCHAR(20) NOT NULL DEFAULT 'none' CHECK (credit_state IN ('none','credited','revoked')),
+    system_decision VARCHAR(40),
+    version_no INTEGER NOT NULL DEFAULT 1 CHECK (version_no >= 1),
+    supersedes_contribution_id BIGINT REFERENCES document_score_contributions(contribution_id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    credited_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    revoke_reason TEXT,
+    reviewer_id BIGINT REFERENCES users(user_id),
+    reviewer_reason TEXT
+);
+
+CREATE INDEX idx_doc_score_contrib_document ON document_score_contributions (document_id);
+CREATE INDEX idx_doc_score_contrib_faculty_period ON document_score_contributions (faculty_id, academic_year, semester);
+
+CREATE UNIQUE INDEX uq_doc_score_active_credit_slot ON document_score_contributions (credit_uniqueness_key)
+    WHERE credit_state = 'credited' AND credited_points > 0 AND credit_uniqueness_key IS NOT NULL;
+
+CREATE UNIQUE INDEX uq_documents_faculty_sha256_active ON documents (faculty_id, sha256_hash)
+    WHERE sha256_hash IS NOT NULL AND status NOT IN ('rejected', 'upload_failed');
 
 CREATE TABLE document_extractions (
     extraction_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -214,6 +266,9 @@ CREATE TABLE evaluation_periods (
 );
 
 CREATE INDEX idx_assignments_faculty ON reviewer_assignments(faculty_id);
+CREATE UNIQUE INDEX uq_reviewer_assignments_one_active_per_faculty
+    ON reviewer_assignments (faculty_id)
+    WHERE (is_active = TRUE);
 CREATE INDEX idx_documents_faculty_status ON documents(faculty_id, status);
 CREATE INDEX idx_documents_criterion ON documents(criterion_id);
 CREATE INDEX idx_extractions_document ON document_extractions(document_id);

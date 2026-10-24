@@ -1,0 +1,182 @@
+-- =============================================================================
+-- FacultyLink — KRA I Criterion A (SET / SEF) seed — FINALIZED (not executed)
+-- =============================================================================
+--
+-- Official reference: DBM–CHED Joint Circular No. 01, series of 2026
+--   Sections 5–10, pages 3–6 (reviewed).
+--
+-- Confirmed content:
+--   KRA I: Instruction
+--   Criterion A: Teaching Effectiveness — maximum 60 points
+--   SET: Student Evaluation of Teachers — 60% of Criterion A, max 36 points
+--        (Overall SET Rating / 100) × 36
+--   SEF: Supervisor's Evaluation of Faculty — 40% of Criterion A, max 24 points
+--        (Overall SEF Rating / 100) × 24
+--
+-- FacultyLink internal indicator codes (NOT official instrument codes):
+--   A.1 → SET,  A.2 → SEF  (see kraStructure.js / kra_structure.dart convention)
+--
+-- Section 10 (multi-semester averaging, special circumstances):
+--   Documented for Phase 2+ engine — docs/KRA_I_CRITERION_A_SECTION10_SCORING.md
+--   rule_config.section_10_engine_ref points to that file.
+--
+-- effective_from / effective_to: NULL until effectivity clause is recorded.
+--
+-- Safety: INSERT-only; ON CONFLICT DO NOTHING; scoring_rules via NOT EXISTS.
+-- Scope: KRA I + Criterion A only. Change ROLLBACK → COMMIT after explicit approval.
+-- =============================================================================
+
+BEGIN;
+
+INSERT INTO kra_configurations (kra_code, kra_name, description, guideline_version, is_active)
+VALUES (
+    'KRA I',
+    'Instruction',
+    'KRA I — Instruction per DBM–CHED Joint Circular No. 01, s. 2026 (Secs. 5–10, pp. 3–6).',
+    'DBM-CHED-JC-01-2026',
+    TRUE
+)
+ON CONFLICT (kra_code) DO NOTHING;
+
+INSERT INTO kra_criteria (kra_id, criterion_code, criterion_name, description, display_order)
+VALUES (
+    (SELECT kra_id FROM kra_configurations WHERE kra_code = 'KRA I'),
+    'A',
+    'Teaching Effectiveness',
+    'Criterion A — Teaching Effectiveness. Maximum 60 points: SET (60%, max 36) + SEF (40%, max 24). DBM–CHED JC No. 01, s. 2026.',
+    1
+)
+ON CONFLICT (kra_id, criterion_code) DO NOTHING;
+
+INSERT INTO kra_indicators (
+    criterion_id,
+    indicator_code,
+    indicator_name,
+    required_evidence,
+    credit_uniqueness,
+    display_order
+)
+VALUES
+    (
+        (SELECT c.criterion_id FROM kra_criteria c
+           JOIN kra_configurations k ON k.kra_id = c.kra_id
+          WHERE k.kra_code = 'KRA I' AND c.criterion_code = 'A'),
+        'A.1',
+        'Student Evaluation of Teachers',
+        'Documentation supporting the official Overall SET Rating for the evaluation cycle (JC No. 01, s. 2026, Secs. 5–10). FacultyLink code A.1 — internal, not an official instrument code.',
+        'one_active_credit_per_term',
+        1
+    ),
+    (
+        (SELECT c.criterion_id FROM kra_criteria c
+           JOIN kra_configurations k ON k.kra_id = c.kra_id
+          WHERE k.kra_code = 'KRA I' AND c.criterion_code = 'A'),
+        'A.2',
+        'Supervisor''s Evaluation of Faculty',
+        'Documentation supporting the official Overall SEF Rating for the evaluation cycle (JC No. 01, s. 2026, Secs. 5–10). FacultyLink code A.2 — internal, not an official instrument code.',
+        'one_active_credit_per_term',
+        2
+    )
+ON CONFLICT (criterion_id, indicator_code) DO NOTHING;
+
+INSERT INTO scoring_rules (
+    indicator_id,
+    rule_name,
+    rule_type,
+    rule_config,
+    guideline_version,
+    is_active,
+    effective_from,
+    effective_to
+)
+SELECT
+    i.indicator_id,
+    'SET — (Overall SET Rating / 100) × 36',
+    'percentage_of_max',
+    jsonb_build_object(
+        'input_field', 'overall_set_rating',
+        'input_min', 0,
+        'input_max', 100,
+        'max_points', 36,
+        'weight_percent_of_criterion_a', 60,
+        'formula', '(rating / 100) * max_points',
+        'criterion_code', 'A',
+        'criterion_max_points', 60,
+        'guideline', 'DBM-CHED-JC-01-2026',
+        'guideline_sections', '5-10',
+        'guideline_pages', '3-6',
+        'section_10_engine_ref', 'docs/KRA_I_CRITERION_A_SECTION10_SCORING.md',
+        'facultylink_indicator_code', 'A.1'
+    ),
+    'DBM-CHED-JC-01-2026',
+    TRUE,
+    NULL,
+    NULL
+FROM kra_indicators i
+JOIN kra_criteria c ON c.criterion_id = i.criterion_id
+JOIN kra_configurations k ON k.kra_id = c.kra_id
+WHERE k.kra_code = 'KRA I'
+  AND c.criterion_code = 'A'
+  AND i.indicator_code = 'A.1'
+  AND NOT EXISTS (
+      SELECT 1 FROM scoring_rules sr
+      WHERE sr.indicator_id = i.indicator_id
+        AND sr.rule_name = 'SET — (Overall SET Rating / 100) × 36'
+  );
+
+INSERT INTO scoring_rules (
+    indicator_id,
+    rule_name,
+    rule_type,
+    rule_config,
+    guideline_version,
+    is_active,
+    effective_from,
+    effective_to
+)
+SELECT
+    i.indicator_id,
+    'SEF — (Overall SEF Rating / 100) × 24',
+    'percentage_of_max',
+    jsonb_build_object(
+        'input_field', 'overall_sef_rating',
+        'input_min', 0,
+        'input_max', 100,
+        'max_points', 24,
+        'weight_percent_of_criterion_a', 40,
+        'formula', '(rating / 100) * max_points',
+        'criterion_code', 'A',
+        'criterion_max_points', 60,
+        'guideline', 'DBM-CHED-JC-01-2026',
+        'guideline_sections', '5-10',
+        'guideline_pages', '3-6',
+        'section_10_engine_ref', 'docs/KRA_I_CRITERION_A_SECTION10_SCORING.md',
+        'facultylink_indicator_code', 'A.2'
+    ),
+    'DBM-CHED-JC-01-2026',
+    TRUE,
+    NULL,
+    NULL
+FROM kra_indicators i
+JOIN kra_criteria c ON c.criterion_id = i.criterion_id
+JOIN kra_configurations k ON k.kra_id = c.kra_id
+WHERE k.kra_code = 'KRA I'
+  AND c.criterion_code = 'A'
+  AND i.indicator_code = 'A.2'
+  AND NOT EXISTS (
+      SELECT 1 FROM scoring_rules sr
+      WHERE sr.indicator_id = i.indicator_id
+        AND sr.rule_name = 'SEF — (Overall SEF Rating / 100) × 24'
+  );
+
+-- Post-COMMIT verification:
+--   python scripts/list_kra_indicators.py
+--   SELECT c.criterion_id, c.criterion_code, i.indicator_code, i.indicator_name,
+--          i.credit_uniqueness, sr.rule_name, sr.rule_config
+--     FROM kra_criteria c
+--     JOIN kra_configurations k ON k.kra_id = c.kra_id
+--     LEFT JOIN kra_indicators i ON i.criterion_id = c.criterion_id
+--     LEFT JOIN scoring_rules sr ON sr.indicator_id = i.indicator_id
+--    WHERE k.kra_code = 'KRA I' AND c.criterion_code = 'A';
+
+ROLLBACK;

@@ -10,11 +10,17 @@ sys.path.insert(0, str(BACKEND))
 from app import create_app  # noqa: E402
 from tests.test_config import IsolatedTestConfig as TestConfig  # noqa: E402
 from extensions import db  # noqa: E402
+from models.document import Document  # noqa: E402
+from models.document_extraction import DocumentExtraction  # noqa: E402
 from models.kra_configuration import KraConfiguration, KraCriterion, KraIndicator, ScoringRule  # noqa: E402
+from models.validation_result import ValidationResult  # noqa: E402
 from tests.test_auth_api import _admin_cookie, _fetch_csrf  # noqa: E402
 
 
 def _clear_kra_tables():
+    db.session.query(ValidationResult).delete()
+    db.session.query(DocumentExtraction).delete()
+    db.session.query(Document).delete()
     db.session.query(ScoringRule).delete()
     db.session.query(KraIndicator).delete()
     db.session.query(KraCriterion).delete()

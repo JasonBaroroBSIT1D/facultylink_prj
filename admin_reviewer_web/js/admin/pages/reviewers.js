@@ -144,6 +144,38 @@ window.AdminPageInit = function (el, helpers) {
 
   function openAssign(reviewer) {
     var assignState = { assignments: [], candidates: [], filter: '', loading: true, error: '' }
+    var assignLoadInFlight = null
+
+    function openReassignToThisReviewer(candidate, wrap) {
+      if (
+        !window.confirm(
+          'Reassign ' +
+            (candidate.full_name || 'this faculty member') +
+            ' from ' +
+            (candidate.active_reviewer_name || 'their current reviewer') +
+            ' to ' +
+            reviewer.full_name +
+            '?'
+        )
+      ) {
+        return
+      }
+      var errorEl = wrap.querySelector('[data-error]')
+      if (errorEl) errorEl.hidden = true
+      FacultyLinkAdminApi.updateReviewerAssignment(candidate.active_assignment_id, {
+        reviewer_id: reviewer.user_id,
+      })
+        .then(function () {
+          return reloadAssignments(wrap)
+        })
+        .then(function () {
+          load()
+        })
+        .catch(function (err) {
+          assignState.error = ui.friendlyError(err)
+          renderAssignPanel(wrap)
+        })
+    }
 
     function openReassign(assignment, wrap) {
       var faculty = assignment.faculty || {}
@@ -235,84 +267,9 @@ window.AdminPageInit = function (el, helpers) {
         })
     }
 
-    function renderAssignPanel(wrap) {
+    function bindAssignPanelEvents(wrap) {
       var panel = wrap.querySelector('[data-assign-panel]')
       if (!panel) return
-      var assignedRows = assignState.assignments.filter(function (a) {
-        var q = assignState.filter.trim().toLowerCase()
-        if (!q) return true
-        var f = a.faculty || {}
-        return (
-          (f.full_name && f.full_name.toLowerCase().indexOf(q) >= 0) ||
-          (f.email && f.email.toLowerCase().indexOf(q) >= 0) ||
-          (f.department && f.department.toLowerCase().indexOf(q) >= 0)
-        )
-      })
-      var candidateRows = assignState.candidates.filter(function (c) {
-        if (c.already_assigned) return false
-        var q = assignState.filter.trim().toLowerCase()
-        if (!q) return true
-        return (
-          (c.full_name && c.full_name.toLowerCase().indexOf(q) >= 0) ||
-          (c.email && c.email.toLowerCase().indexOf(q) >= 0) ||
-          (c.department && c.department.toLowerCase().indexOf(q) >= 0)
-        )
-      })
-
-      panel.innerHTML =
-        (assignState.error ? '<p class="admin-form-error">' + ui.esc(assignState.error) + '</p>' : '') +
-        (assignState.loading
-          ? ui.loadingState('Loading assignments…')
-          : '<div class="admin-form-stack">' +
-            '<label>Search faculty<input type="search" name="assign_filter" value="' +
-            ui.esc(assignState.filter) +
-            '" placeholder="Name, email, department…" /></label>' +
-            '<h3 style="margin:16px 0 8px;font-size:0.95rem">Assigned faculty (' +
-            assignState.assignments.length +
-            ')</h3>' +
-            (assignedRows.length
-              ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Department</th><th></th></tr></thead><tbody>' +
-                assignedRows
-                  .map(function (a) {
-                    var f = a.faculty || {}
-                    return (
-                      '<tr><td>' +
-                      ui.personCell(f.full_name, f.email) +
-                      '</td><td>' +
-                      ui.esc(f.department || '—') +
-                      '</td><td><div class="admin-table__actions"><button type="button" class="fl-btn fl-btn--ghost" data-reassign="' +
-                      a.assignment_id +
-                      '">Reassign</button>' +
-                      '<button type="button" class="fl-btn fl-btn--ghost" data-unassign="' +
-                      a.assignment_id +
-                      '">Remove</button></div></td></tr>'
-                    )
-                  })
-                  .join('') +
-                '</tbody></table></div>'
-              : '<p class="admin-page-desc">No faculty assigned yet.</p>') +
-            '<h3 style="margin:16px 0 8px;font-size:0.95rem">Available faculty</h3>' +
-            (candidateRows.length
-              ? candidateRows
-                  .map(function (c) {
-                    return (
-                      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:500">' +
-                      '<input type="checkbox" name="faculty_id" value="' +
-                      c.faculty_id +
-                      '" />' +
-                      ui.esc(c.full_name) +
-                      ' · ' +
-                      ui.esc(c.department || '—') +
-                      '</label>'
-                    )
-                  })
-                  .join('')
-              : '<p class="admin-page-desc">No additional active faculty match this filter.</p>') +
-            '<p class="admin-form-error" data-error hidden></p>' +
-            '<div class="admin-dialog__actions">' +
-            '<button type="button" class="fl-btn fl-btn--ghost" data-dismiss>Close</button>' +
-            '<button type="submit" class="fl-btn fl-btn--primary">Assign selected</button></div></div>')
-
       var filterInput = panel.querySelector('[name="assign_filter"]')
       if (filterInput) {
         filterInput.addEventListener('input', function (e) {
@@ -320,6 +277,11 @@ window.AdminPageInit = function (el, helpers) {
           renderAssignPanel(wrap)
         })
       }
+      panel.querySelectorAll('[data-retry-assign]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          reloadAssignments(wrap)
+        })
+      })
       panel.querySelectorAll('[data-reassign]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var assignmentId = Number(btn.getAttribute('data-reassign'))
@@ -327,6 +289,15 @@ window.AdminPageInit = function (el, helpers) {
             return a.assignment_id === assignmentId
           })
           if (row) openReassign(row, wrap)
+        })
+      })
+      panel.querySelectorAll('[data-reassign-to-me]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var facultyId = Number(btn.getAttribute('data-reassign-to-me'))
+          var candidate = assignState.candidates.find(function (c) {
+            return c.faculty_id === facultyId
+          })
+          if (candidate) openReassignToThisReviewer(candidate, wrap)
         })
       })
       panel.querySelectorAll('[data-unassign]').forEach(function (btn) {
@@ -348,21 +319,172 @@ window.AdminPageInit = function (el, helpers) {
       })
     }
 
+    function renderAssignPanel(wrap) {
+      var panel = wrap.querySelector('[data-assign-panel]')
+      if (!panel) return
+      var assignedRows = assignState.assignments.filter(function (a) {
+        var q = assignState.filter.trim().toLowerCase()
+        if (!q) return true
+        var f = a.faculty || {}
+        return (
+          (f.full_name && f.full_name.toLowerCase().indexOf(q) >= 0) ||
+          (f.email && f.email.toLowerCase().indexOf(q) >= 0) ||
+          (f.department && f.department.toLowerCase().indexOf(q) >= 0)
+        )
+      })
+      function matchesAssignFilter(c) {
+        var q = assignState.filter.trim().toLowerCase()
+        if (!q) return true
+        return (
+          (c.full_name && c.full_name.toLowerCase().indexOf(q) >= 0) ||
+          (c.email && c.email.toLowerCase().indexOf(q) >= 0) ||
+          (c.department && c.department.toLowerCase().indexOf(q) >= 0)
+        )
+      }
+
+      var candidateRows = assignState.candidates.filter(function (c) {
+        if (c.already_assigned || c.assigned_elsewhere) return false
+        return matchesAssignFilter(c)
+      })
+
+      var elsewhereRows = assignState.candidates.filter(function (c) {
+        if (!c.assigned_elsewhere) return false
+        return matchesAssignFilter(c)
+      })
+
+      if (assignState.loading) {
+        panel.innerHTML =
+          '<div class="admin-assign-faculty__loading" role="status">' + ui.loadingState('Loading assignments…') + '</div>'
+        return
+      }
+
+      if (assignState.error && !assignState.assignments.length && !assignState.candidates.length) {
+        panel.innerHTML =
+          '<div class="admin-assign-faculty__error">' +
+          '<p class="admin-form-error">' +
+          ui.esc(assignState.error) +
+          '</p>' +
+          '<button type="button" class="fl-btn fl-btn--primary" data-retry-assign>Retry</button>' +
+          '<footer class="admin-dialog__actions">' +
+          '<button type="button" class="fl-btn fl-btn--ghost" data-dismiss>Close</button></footer></div>'
+        bindAssignPanelEvents(wrap)
+        return
+      }
+
+      var candidateHtml = candidateRows.length
+        ? '<div class="admin-assign-faculty-list">' +
+          candidateRows
+            .map(function (c) {
+              return (
+                '<label class="admin-assign-faculty-row">' +
+                '<input type="checkbox" class="admin-assign-faculty-row__check" name="faculty_id" value="' +
+                c.faculty_id +
+                '" />' +
+                '<span class="admin-assign-faculty-row__text">' +
+                '<span class="admin-assign-faculty-row__name">' +
+                ui.esc(c.full_name) +
+                '</span>' +
+                '<span class="admin-assign-faculty-row__dept">' +
+                ui.esc(c.department || '—') +
+                '</span></span></label>'
+              )
+            })
+            .join('') +
+          '</div>'
+        : '<p class="admin-page-desc">No unassigned active faculty match this filter.</p>'
+
+      var elsewhereHtml = elsewhereRows.length
+        ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Department</th><th>Current reviewer</th><th></th></tr></thead><tbody>' +
+          elsewhereRows
+            .map(function (c) {
+              return (
+                '<tr><td>' +
+                ui.personCell(c.full_name, c.email) +
+                '</td><td>' +
+                ui.esc(c.department || '—') +
+                '</td><td>' +
+                ui.esc(c.active_reviewer_name || '—') +
+                '</td><td><button type="button" class="fl-btn fl-btn--ghost" data-reassign-to-me="' +
+                c.faculty_id +
+                '">Reassign here</button></td></tr>'
+              )
+            })
+            .join('') +
+          '</tbody></table></div>'
+        : ''
+
+      panel.innerHTML =
+        '<div class="admin-dialog__body">' +
+        (assignState.error
+          ? '<p class="admin-form-error" role="alert">' +
+            ui.esc(assignState.error) +
+            ' <button type="button" class="fl-btn fl-btn--ghost" style="margin-left:8px;padding:4px 10px;font-size:0.8rem" data-retry-assign>Retry</button></p>'
+          : '') +
+        '<div class="admin-form-stack">' +
+        '<label>Search faculty<input type="search" name="assign_filter" value="' +
+        ui.esc(assignState.filter) +
+        '" placeholder="Name, email, department…" autocomplete="off" /></label></div>' +
+        '<h3 class="admin-assign-faculty__section-title">Assigned faculty (' +
+        assignState.assignments.length +
+        ')</h3>' +
+        (assignedRows.length
+          ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Department</th><th></th></tr></thead><tbody>' +
+            assignedRows
+              .map(function (a) {
+                var f = a.faculty || {}
+                return (
+                  '<tr><td>' +
+                  ui.personCell(f.full_name, f.email) +
+                  '</td><td>' +
+                  ui.esc(f.department || '—') +
+                  '</td><td><div class="admin-table__actions"><button type="button" class="fl-btn fl-btn--ghost" data-reassign="' +
+                  a.assignment_id +
+                  '">Reassign</button>' +
+                  '<button type="button" class="fl-btn fl-btn--ghost" data-unassign="' +
+                  a.assignment_id +
+                  '">Remove</button></div></td></tr>'
+                )
+              })
+              .join('') +
+            '</tbody></table></div>'
+          : '<p class="admin-page-desc">No faculty assigned yet.</p>') +
+        '<h3 class="admin-assign-faculty__section-title">Available faculty</h3>' +
+        candidateHtml +
+        (elsewhereRows.length
+          ? '<h3 class="admin-assign-faculty__section-title">Assigned to another reviewer</h3>' + elsewhereHtml
+          : '') +
+        '<p class="admin-form-error" data-error hidden></p></div>' +
+        '<footer class="admin-dialog__actions">' +
+        '<button type="button" class="fl-btn fl-btn--ghost" data-dismiss>Close</button>' +
+        '<button type="submit" class="fl-btn fl-btn--primary">Assign selected</button></footer>'
+
+      bindAssignPanelEvents(wrap)
+    }
+
     function reloadAssignments(wrap) {
+      if (assignLoadInFlight) return assignLoadInFlight
       assignState.loading = true
       assignState.error = ''
       renderAssignPanel(wrap)
-      return Promise.all([
+      assignLoadInFlight = Promise.all([
         FacultyLinkAdminApi.listReviewerAssignments(reviewer.user_id),
-        FacultyLinkAdminApi.listAssignmentCandidates(reviewer.user_id, assignState.filter),
-      ]).then(function (parts) {
-        assignState.assignments = parts[0]
-        assignState.candidates = parts[1].filter(function (c) {
-          return !window.FacultyLinkAdminProductionAccounts.isDemoSeedEmail(c.email)
+        FacultyLinkAdminApi.listAssignmentCandidates(reviewer.user_id, ''),
+      ])
+        .then(function (parts) {
+          assignState.assignments = parts[0] || []
+          assignState.candidates = (parts[1] || []).filter(function (c) {
+            return !window.FacultyLinkAdminProductionAccounts.isDemoSeedEmail(c.email)
+          })
         })
-        assignState.loading = false
-        renderAssignPanel(wrap)
-      })
+        .catch(function (err) {
+          assignState.error = ui.friendlyError(err) || 'Unable to load assignment data.'
+        })
+        .finally(function () {
+          assignState.loading = false
+          assignLoadInFlight = null
+          renderAssignPanel(wrap)
+        })
+      return assignLoadInFlight
     }
 
     closeAssignModal()
@@ -371,7 +493,7 @@ window.AdminPageInit = function (el, helpers) {
     wrap.className = 'admin-dialog'
     wrap.innerHTML =
       '<div class="admin-dialog__backdrop" data-dismiss></div>' +
-      '<div class="admin-dialog__panel admin-dialog__panel--wide admin-dialog__panel--scroll" role="dialog" aria-modal="true">' +
+      '<div class="admin-dialog__panel admin-dialog__panel--assign-faculty admin-dialog__panel--scroll" role="dialog" aria-modal="true">' +
       '<header class="admin-dialog__header"><h2 class="admin-dialog__title">Assign faculty — ' +
       ui.esc(reviewer.full_name) +
       '</h2></header>' +
@@ -410,11 +532,7 @@ window.AdminPageInit = function (el, helpers) {
           }
         })
     })
-    reloadAssignments(wrap).catch(function (err) {
-      assignState.loading = false
-      assignState.error = ui.friendlyError(err) || 'Unable to load assignment data.'
-      renderAssignPanel(wrap)
-    })
+    reloadAssignments(wrap)
   }
 
   function openEdit(user) {

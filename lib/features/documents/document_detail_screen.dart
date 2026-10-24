@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/faculty_models.dart';
 import '../../services/api/faculty_api.dart';
+import '../../services/api/faculty_api_exception.dart';
 import '../../widgets/fl_status_badge.dart';
 import 'ocr_results_screen.dart';
 import 'validation_results_screen.dart';
@@ -18,33 +19,70 @@ class DocumentDetailScreen extends StatefulWidget {
 class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   DocumentDetail? _detail;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    FacultyApi.getDocumentDetail(widget.documentId).then((d) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final d = await FacultyApi.getDocumentDetail(widget.documentId);
       if (!mounted) return;
       setState(() {
         _detail = d;
         _loading = false;
       });
-    });
+    } on FacultyApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load document.';
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Document Detail')),
+      appBar: AppBar(
+        title: const Text('Document Detail'),
+        actions: [
+          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+        ],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : _error != null
+              ? Center(child: Text(_error!))
+              : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_detail!.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                  Text(
+                    _detail!.title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 8),
                   FlStatusBadge(status: _detail!.status),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Server status reflects OCR and rule validation. Needs Verification does not mean credited or system-approved.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                  ),
                   const SizedBox(height: 16),
                   _Section(
                     title: 'Original document',
@@ -58,11 +96,17 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       ),
                       child: Column(
                         children: [
-                          const Icon(Icons.picture_as_pdf, size: 48, color: AppColors.academicBlue),
+                          Icon(
+                            _detail!.fileName.toLowerCase().endsWith('.pdf')
+                                ? Icons.picture_as_pdf
+                                : Icons.image,
+                            size: 48,
+                            color: AppColors.academicBlue,
+                          ),
                           const SizedBox(height: 8),
                           Text(_detail!.fileName, textAlign: TextAlign.center),
                           const Text(
-                            'Original file preserved — not replaced by OCR text (mock).',
+                            'Original file preserved on the server.',
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
@@ -103,8 +147,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       ),
                     ],
                   ),
-                  if (_detail!.reviewerNote != null)
-                    _Section(title: 'Reviewer feedback (mock)', child: Text(_detail!.reviewerNote!)),
+                  _Section(
+                    title: 'Validation summary',
+                    child: Text(_detail!.validationSummary),
+                  ),
                   _Section(
                     title: 'Status history',
                     child: Column(

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Boolean, Date, ForeignKey, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -50,6 +52,9 @@ class KraIndicator(db.Model):
     indicator_code: Mapped[str] = mapped_column(String(30), nullable=False)
     indicator_name: Mapped[str] = mapped_column(String(200), nullable=False)
     required_evidence: Mapped[str | None] = mapped_column(Text)
+    credit_uniqueness: Mapped[str] = mapped_column(
+        String(40), default="per_evidence_hash", nullable=False
+    )
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     criterion: Mapped[KraCriterion] = relationship("KraCriterion", back_populates="indicators")
@@ -73,3 +78,14 @@ class ScoringRule(db.Model):
     effective_to: Mapped[object | None] = mapped_column(Date)
 
     indicator: Mapped[KraIndicator] = relationship("KraIndicator", back_populates="scoring_rules")
+
+
+class KraCriterionOperationalSettings(db.Model):
+    __tablename__ = "kra_criterion_operational_settings"
+
+    criterion_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("kra_criteria.criterion_id"), primary_key=True
+    )
+    confidence_thresholds: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.user_id"))

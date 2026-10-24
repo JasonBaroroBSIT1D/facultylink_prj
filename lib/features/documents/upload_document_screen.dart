@@ -4,12 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/document_status.dart';
-import '../../core/kra/kra_structure.dart';
-import '../../services/mock/faculty_mock_data.dart';
+import '../../models/kra_configuration_models.dart';
+import '../../services/api/faculty_api.dart';
+import '../../services/api/faculty_api_exception.dart';
 import '../../widgets/fl_primary_button.dart';
 import '../../widgets/fl_evaluation_period_card.dart';
 import '../../services/evaluation_period_controller.dart';
+import 'document_detail_screen.dart';
 
+/// SET/SEF uploads for KRA I Criterion A only (Phase 2.1 backend integration).
 class UploadDocumentScreen extends StatefulWidget {
   const UploadDocumentScreen({super.key, this.periodController});
 
@@ -23,10 +26,11 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
   PlatformFile? _file;
   Uint8List? _previewBytes;
   final _titleController = TextEditingController();
-  String? _kra;
-  String? _criterion;
-  DocumentStatus? _demoState;
-  bool _simulating = false;
+  DocumentStatus? _progressState;
+  bool _submitting = false;
+  KraCriterionTarget? _criterionTarget;
+  String? _configError;
+  bool _loadingConfig = true;
   late final EvaluationPeriodController _periods =
       widget.periodController ?? EvaluationPeriodController.instance;
 
@@ -35,9 +39,36 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
     super.initState();
     _periods.addListener(_periodChanged);
     _periods.refresh();
+    _loadCriterionConfig();
   }
 
-  void _periodChanged() { if (mounted) setState(() {}); }
+  void _periodChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadCriterionConfig() async {
+    try {
+      final target = await FacultyApi.getKraICriterionA();
+      if (!mounted) return;
+      setState(() {
+        _criterionTarget = target;
+        _configError = null;
+        _loadingConfig = false;
+      });
+    } on FacultyApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _configError = e.message;
+        _loadingConfig = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _configError = 'Unable to load KRA I Criterion A configuration.';
+        _loadingConfig = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -58,69 +89,111 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
       _file = f;
       _previewBytes = bytes;
       _titleController.text = f.name.replaceAll(RegExp(r'\.[^.]+$'), '');
-      _demoState = DocumentStatus.fileSelected;
+      _progressState = DocumentStatus.fileSelected;
     });
   }
 
-  Future<void> _simulateSubmit() async {
+  Future<void> _submit() async {
     if (!_periods.canSubmit) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Submissions are not permitted for the selected evaluation period.')));
-      return;
-    }
-    final period = _periods.current!;
-    if (_file == null || _kra == null || _criterion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select file, KRA, and criterion.')),
+        const SnackBar(
+          content: Text(
+            'Submissions are not permitted for the selected evaluation period.',
+          ),
+        ),
       );
       return;
     }
-    setState(() => _simulating = true);
-    final steps = [
-      DocumentStatus.uploading,
-      DocumentStatus.ocrProcessing,
-      DocumentStatus.classifying,
-      DocumentStatus.validating,
-      DocumentStatus.systemApproved,
-    ];
-    for (final s in steps) {
-      if (!mounted) return;
-      if (!period.submissionsAllowedAt(_periods.now)) {
-        setState(() => _simulating = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The evaluation period has closed. Submission was not completed.')));
-        return;
-      }
-      setState(() => _demoState = s);
-      await Future<void>.delayed(const Duration(milliseconds: 700));
-    }
-    if (!mounted) return;
-    setState(() => _simulating = false);
-    if (!period.submissionsAllowedAt(_periods.now)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The evaluation period has closed. Submission was not completed.')));
+    final period = _periods.current;
+    final target = _criterionTarget;
+    if (period == null || target == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Evaluation period or KRA configuration unavailable.')),
+      );
       return;
     }
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mock workflow complete'),
-        content: const Text(
-          'UI demonstration only. Indicator classification and approval come from the Flask rule engine — not saved locally.',
+    if (_file == null || _previewBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a PDF or image file.')),
+      );
+      return;
+    }
+
+    final periodId = int.tryParse(period.id);
+    if (periodId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid evaluation period identifier.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _progressState = DocumentStatus.uploading;
+    });
+
+    try {
+      if (!period.submissionsAllowedAt(_periods.now)) {
+        throw FacultyApiException(
+          'The evaluation period has closed.',
+          errorCode: 'submission_closed',
+        );
+      }
+
+      setState(() => _progressState = DocumentStatus.ocrProcessing);
+
+      final detail = await FacultyApi.uploadDocument(
+        periodId: periodId,
+        criterionId: target.criterionId,
+        title: _titleController.text.trim().isEmpty
+            ? _file!.name
+            : _titleController.text.trim(),
+        fileName: _file!.name,
+        bytes: _previewBytes!,
+        mimeType: FacultyApi.mimeTypeForExtension(_file!.extension),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _progressState = detail.status;
+      });
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => DocumentDetailScreen(documentId: detail.id),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
+      );
+    } on FacultyApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _progressState = DocumentStatus.uploadFailed;
+      });
+      final message = e.isDuplicate
+          ? e.message
+          : e.isClosedPeriod
+              ? e.message
+              : e.message;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _progressState = DocumentStatus.uploadFailed;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Upload failed. Check your connection and try again.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final target = _criterionTarget;
     return Scaffold(
       appBar: AppBar(title: const Text('Upload Document')),
       body: SafeArea(
@@ -135,22 +208,64 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               IgnorePointer(
-                ignoring: _simulating,
+                ignoring: _submitting,
                 child: FlEvaluationPeriodCard(controller: _periods),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(onPressed: _simulating ? null : _pickFile, icon: const Icon(Icons.attach_file), label: const Text('Select PDF or image')),
+              if (_loadingConfig)
+                const LinearProgressIndicator()
+              else if (_configError != null)
+                Text(_configError!, style: const TextStyle(color: Colors.red))
+              else if (target != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        target.displayLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        target.criterionName,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'SET and SEF evidence only. Indicator A.1 / A.2 is classified from document content after upload.',
+                        style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _submitting ? null : _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Select PDF or image'),
+              ),
               if (_file != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'File: ${_file!.name} (${((_file!.lengthSync() ?? _previewBytes?.length ?? 0) / 1024).toStringAsFixed(1)} KB)',
+                  'File: ${_file!.name} (${((_previewBytes?.length ?? 0) / 1024).toStringAsFixed(1)} KB)',
                 ),
                 if (_previewBytes != null && _file!.extension != 'pdf')
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(_previewBytes!, height: 160, fit: BoxFit.cover),
+                      child: Image.memory(
+                        _previewBytes!,
+                        height: 160,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 if (_file!.extension == 'pdf')
@@ -166,7 +281,11 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
                       children: [
                         Icon(Icons.picture_as_pdf, color: AppColors.academicBlue, size: 40),
                         SizedBox(width: 12),
-                        Expanded(child: Text('PDF selected — original preview via backend viewer when integrated.')),
+                        Expanded(
+                          child: Text(
+                            'PDF selected — original file is sent to the server for OCR and validation.',
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -176,40 +295,35 @@ class _UploadDocumentScreenState extends State<UploadDocumentScreen> {
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Document title'),
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _kra,
-                decoration: const InputDecoration(labelText: 'KRA'),
-                items: KraStructure.kraOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
-                onChanged: (v) => setState(() {
-                  _kra = v;
-                  _criterion = null;
-                }),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _criterion,
-                decoration: const InputDecoration(labelText: 'Criterion'),
-                items: (_kra != null ? FacultyMockData.criterionOptions[_kra!]! : <String>[])
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: _kra == null ? null : (v) => setState(() => _criterion = v),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Indicator will be classified by the backend from document content (mock UI).',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-              ),
-              if (_demoState != null) ...[
+              if (_progressState != null) ...[
                 const SizedBox(height: 20),
-                Text('Processing state (demo): ${_demoState!.label}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                if (_simulating) const LinearProgressIndicator(),
+                Text(
+                  'Status: ${_progressState!.label}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (_submitting) const LinearProgressIndicator(),
               ],
               const SizedBox(height: 24),
               FlPrimaryButton(
-                label: _simulating ? 'Processing…' : !_periods.canSubmit ? 'Submissions unavailable' : 'Submit (mock workflow)',
-                loading: _simulating,
-                onPressed: _simulating || !_periods.canSubmit ? null : _simulateSubmit,
+                label: _submitting
+                    ? 'Uploading…'
+                    : !_periods.canSubmit
+                        ? 'Submissions unavailable'
+                        : _configError != null
+                            ? 'Configuration unavailable'
+                            : 'Submit for OCR & validation',
+                loading: _submitting,
+                onPressed: _submitting ||
+                        !_periods.canSubmit ||
+                        _configError != null ||
+                        target == null
+                    ? null
+                    : _submit,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Documents remain in Needs Verification until reviewer action. Automatic approval and point crediting are not enabled.',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
           ),

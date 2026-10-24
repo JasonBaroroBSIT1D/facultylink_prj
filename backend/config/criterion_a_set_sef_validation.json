@@ -1,0 +1,84 @@
+{
+  "rule_version": "DBM-CHED-JC-01-2026-phase2.1",
+  "guideline_reference": "Joint Circular No. 01, s. 2026 (Secs. 5-10, pp. 3-6)",
+  "criterion_code": "A",
+  "kra_code": "KRA I",
+  "authenticity_policy": "ocr_and_keyword_matching_are_not_proof_of_document_authenticity",
+  "section_10_unverified_flags": [
+    "multi_semester_averaging_not_implemented",
+    "special_circumstances_not_implemented",
+    "refer_to_docs/KRA_I_CRITERION_A_SECTION10_SCORING.md"
+  ],
+  "indicators": {
+    "A.1": {
+      "document_type": "SET",
+      "classification_keywords": [
+        "student evaluation of teachers",
+        "student evaluation",
+        "set rating",
+        "students evaluation",
+        "evaluation of teachers"
+      ],
+      "classification_min_score": 2,
+      "required_fields": ["overall_rating", "academic_year", "semester"],
+      "rating_field_key": "overall_set_rating",
+      "rating_min": 0,
+      "rating_max": 100,
+      "patterns": {
+        "overall_rating": [
+          "(?i)overall\\s+(?:set\\s+)?rating\\s*[:=]?\\s*([0-9]{1,3}(?:\\.[0-9]+)?)",
+          "(?i)set\\s+rating\\s*[:=]?\\s*([0-9]{1,3}(?:\\.[0-9]+)?)"
+        ],
+        "academic_year": [
+          "(?i)academic\\s+year\\s*[:=]?\\s*([0-9]{4}\\s*[-–]\\s*[0-9]{4})",
+          "(?i)ay\\s*[:=]?\\s*([0-9]{4}\\s*[-–]\\s*[0-9]{4})"
+        ],
+        "semester": [
+          "(?i)semester\\s*[:=]?\\s*(first|second|1st|2nd|summer|midyear)[^\\n]{0,40}",
+          "(?i)(first\\s+semester|second\\s+semester|summer)"
+        ],
+        "faculty_name": [
+          "(?i)(?:faculty|name|teacher|instructor)\\s*[:=]?\\s*([A-Za-z .,'\\-]{3,80})"
+        ]
+      }
+    },
+    "A.2": {
+      "document_type": "SEF",
+      "classification_keywords": [
+        "supervisor's evaluation",
+        "supervisor evaluation",
+        "supervisors evaluation",
+        "sef rating",
+        "evaluation of faculty"
+      ],
+      "classification_min_score": 2,
+      "required_fields": ["overall_rating", "academic_year", "semester"],
+      "rating_field_key": "overall_sef_rating",
+      "rating_min": 0,
+      "rating_max": 100,
+      "patterns": {
+        "overall_rating": [
+          "(?i)overall\\s+(?:sef\\s+)?rating\\s*[:=]?\\s*([0-9]{1,3}(?:\\.[0-9]+)?)",
+          "(?i)sef\\s+rating\\s*[:=]?\\s*([0-9]{1,3}(?:\\.[0-9]+)?)"
+        ],
+        "academic_year": [
+          "(?i)academic\\s+year\\s*[:=]?\\s*([0-9]{4}\\s*[-–]\\s*[0-9]{4})",
+          "(?i)ay\\s*[:=]?\\s*([0-9]{4}\\s*[-–]\\s*[0-9]{4})"
+        ],
+        "semester": [
+          "(?i)semester\\s*[:=]?\\s*(first|second|1st|2nd|summer|midyear)[^\\n]{0,40}",
+          "(?i)(first\\s+semester|second\\s+semester|summer)"
+        ],
+        "faculty_name": [
+          "(?i)(?:faculty|name|teacher|instructor)\\s*[:=]?\\s*([A-Za-z .,'\\-]{3,80})"
+        ]
+      }
+    }
+  },
+  "confidence_thresholds": {
+    "classification_min": 0.55,
+    "field_min": 0.6,
+    "identity_min": 0.65,
+    "ocr_mean_min": 0.35
+  }
+}

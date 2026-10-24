@@ -89,6 +89,30 @@
         return result.body
       })
     },
+    getValidationScoringCriterionA: function () {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/validation-scoring/kra-i/criterion-a').then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to load validation settings.')
+        return result.body
+      })
+    },
+    updateValidationScoringOperationalSettings: function (confidenceThresholds) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/validation-scoring/kra-i/criterion-a/operational-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ confidence_thresholds: confidenceThresholds }),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to save operational settings.')
+        return result.body
+      })
+    },
+    updateKraICriterionAMetadata: function (payload) {
+      return global.FacultyLinkAdminHttp.adminFetch('/admin/kra-configuration/kra-i/criterion-a', {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.body.message || 'Unable to save KRA configuration.')
+        return result.body
+      })
+    },
     listEvaluationPeriods: function () {
       if (!global.FacultyLinkAdminHttp) {
         return global.FacultyLinkEvaluationPeriods.ready().then(function () {

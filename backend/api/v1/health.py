@@ -34,10 +34,20 @@ def health():
                 503,
             )
         mailer_path = Path(mailer_module.__file__).resolve()
+        from services.ocr.text_extractor import ENGINE_VERSION
+        from services.validation.rule_loader import load_set_sef_rules
+
+        rules = load_set_sef_rules()
         payload = {
             "status": "ok",
             "service": service,
             "database": "connected",
+            "documents_pipeline": {
+                "phase": "2.1",
+                "ocr_engine_version": ENGINE_VERSION,
+                "set_sef_rule_version": rules.get("rule_version"),
+                "post_upload_pipeline": "process_criterion_a_set_sef",
+            },
             "auth_onboarding": {
                 "mode": "temporary_password",
                 "create_account_email": "send_welcome_credentials_email",

@@ -2,6 +2,10 @@
 .env
 backend/.env
 
+# Document uploads and DB backups (local)
+backend/storage/
+backend/backups/
+
 # Miscellaneous
 *.class
 *.log
